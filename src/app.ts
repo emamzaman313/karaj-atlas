@@ -43,9 +43,27 @@ function featureCenter(geometry: import('geojson').Geometry | null): [number, nu
   if (!points.length) return null;
   return [points.reduce((sum, p) => sum + p[0], 0) / points.length, points.reduce((sum, p) => sum + p[1], 0) / points.length];
 }
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
 function showFeature(properties: Props, fallback = 'عارضه'): void {
-  $('#feature-title').textContent = String(properties['name:fa'] || properties.name || properties['name:en'] || properties.class || properties.amenity || properties.building || fallback);
-  $('#feature-info').textContent = Object.entries(properties).slice(0, 24).map(([k, v]) => `${k}: ${String(v)}`).join(' · ') || 'ویژگی موجود نیست';
+  const title = String(properties['name:fa'] || properties.name || properties['name:en'] || properties.class || properties.amenity || properties.shop || properties.building || fallback);
+  $('#feature-title').textContent = title;
+  const panel = $('#feature-info'); panel.replaceChildren();
+  const preferred: [string, string][] = [
+    ['name:fa','نام فارسی'],['name','نام'],['name:en','نام انگلیسی'],['amenity','کاربری'],['shop','نوع فروشگاه'],
+    ['highway','نوع راه'],['building','نوع ساختمان'],['addr:street','خیابان'],['addr:housenumber','شماره'],['addr:city','شهر'],
+    ['height','ارتفاع ثبت‌شده'],['building:levels','تعداد طبقات'],['height_source','منبع ارتفاع'],['operator','متولی'],['phone','تلفن'],['website','وب‌سایت']
+  ];
+  const entries = preferred.filter(([key]) => properties[key] !== undefined).concat(Object.entries(properties).filter(([key]) => !preferred.some(([p]) => p === key)).slice(0, 12).map(([k]) => [k,k] as [string,string]));
+  for (const [key,label] of entries) {
+    const row=document.createElement('div'); row.className='feature-row';
+    const name=document.createElement('span'); name.className='feature-key'; name.textContent=label;
+    const value=document.createElement('span'); value.className='feature-value'; value.textContent=formatValue(properties[key]); value.dir='auto';
+    row.append(name,value); panel.append(row);
+  }
   $('#feature-panel').hidden = false;
 }
 async function addGeoJSON(): Promise<void> {

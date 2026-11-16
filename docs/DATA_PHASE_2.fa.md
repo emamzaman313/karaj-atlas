@@ -43,6 +43,12 @@ tippecanoe -o public/data/karaj.pmtiles -zg --drop-densest-as-needed \
 - QA ساختاری، تضمین صحت نقشه‌برداری نیست.
 - OSM با ODbL 1.0 است؛ attribution باید در نقشه و خروجی حفظ شود.
 
+## اتصال لایه‌ها به نقشه
+- Vector source archive: `pmtiles://.../karaj.pmtiles`
+- Source-layerهای Tippecanoe: `building`، `transportation`، `landuse`، `water`، `poi`.
+- لایه‌های PMTiles در style: `buildings`، `roads`، `land`، `water`، `poi-vector`؛ کلیدهای پنل لایه‌ها اکنون visibility این لایه‌ها و لایه‌های GeoJSON محلی را با هم کنترل می‌کنند.
+- GeoJSON محلی نیز لایه‌های راه، footprint ساختمان، آب/آبراه، کاربری زمین و POI دارد. extrusion سه‌بعدی فقط از GeoJSON دارای `render_height_m` ساخته می‌شود؛ دادهٔ PMTiles هنوز برای extrusion محلی آماده‌سازی نشده است.
+
 ## معیار عبور مرحلهٔ دوم
 - [ ] اجرای واقعی pipeline و بررسی artifact
 - [ ] بررسی گزارش featureها، دسته‌ها، هندسه و ارتفاع

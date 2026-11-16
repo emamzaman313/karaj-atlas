@@ -75,7 +75,7 @@ function renderSearchResults(items: SearchItem[]): void {
   resultsEl.hidden = items.length === 0;
 }
 function toggle3D(on: boolean): void {
-  if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); $('#mode-3d').checked = false; return; }
+  if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); ($('#mode-3d') as HTMLInputElement).checked = false; return; }
   threeD = on; map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible'); map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
   map.easeTo({ pitch: on ? 58 : 0, bearing: on ? -18 : 0, duration: 850 }); setStatus(on ? 'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع‌ها با برچسب منبع' : 'نمای دوبعدی فعال');
 }
@@ -85,11 +85,11 @@ function toggleLayer(name: string, visible: boolean): void {
 }
 async function initMap(): Promise<void> {
   const style = await chooseStyle();
-  map = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: true, style });
+  map = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: {}, style });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
   map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
   map.on('load', async () => { $('#loading').hidden = true; await addGeoJSON(); });
-  map.on('error', (event: MapLibreEvent) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
+  map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
   map.on('click', (event: MapLayerMouseEvent) => { const feature = map!.queryRenderedFeatures(event.point)[0]; if (feature) showFeature((feature.properties || {}) as Props); });
 }
 function wireUI(): void {

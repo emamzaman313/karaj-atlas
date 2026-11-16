@@ -10,7 +10,7 @@ def main():
  if d.get("type")!="FeatureCollection" or not isinstance(d.get("features"),list):raise SystemExit("FAIL: not a FeatureCollection")
  feats=d["features"]; counts=Counter(); heights=Counter(); bad=[]
  for i,f in enumerate(feats):
-  g=f.get("geometry") or {}; props=f.get("properties") or {}; counts[g.get("type","missing")]+=1
+  g=f.get("geometry") or {}; props=f.get("properties") or {}; counts[g.get("type", "missing")] += 1
   if not g.get("coordinates"):bad.append((i,"empty geometry"))
   if props.get("building"):
    source=props.get("height_source","missing");heights[source]+=1

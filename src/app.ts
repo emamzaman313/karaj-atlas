@@ -79,9 +79,9 @@ function showFeature(properties: Props, fallback = 'عارضه'): void {
   $('#feature-title').textContent = title;
   const panel = $('#feature-info'); panel.replaceChildren();
   const preferred: [string, string][] = [
-    ['name:fa','نام فارسی'],['name','نام'],['name:en','نام انگلیسی'],['amenity','کاربری'],['shop','نوع فروشگاه'],
+    ['name:fa','نام فارسی'],['name','نام'],['name:en','نام انگلیسی'],['amenity','کاربری'],['shop','نوع فروشگاه'],['tourism','گردشگری'],['leisure','تفریح'],['public_transport','حمل‌ونقل عمومی'],['railway','راه‌آهن'],['natural','طبیعت'],['landuse','کاربری زمین'],['addr:suburb','محله'],['addr:district','ناحیه'],['addr:postcode','کد پستی'],
     ['highway','نوع راه'],['building','نوع ساختمان'],['addr:street','خیابان'],['addr:housenumber','شماره'],['addr:city','شهر'],
-    ['height','ارتفاع ثبت‌شده'],['building:levels','تعداد طبقات'],['height_source','منبع ارتفاع'],['operator','متولی'],['phone','تلفن'],['website','وب‌سایت']
+    ['height','ارتفاع ثبت‌شده'],['render_height_m','ارتفاع نمایشی (متر)'],['building:levels','تعداد طبقات'],['height_source','منبع ارتفاع'],['operator','متولی'],['phone','تلفن'],['website','وب‌سایت'],['opening_hours','ساعات فعالیت'],['wheelchair','دسترسی ویلچر']
   ];
   const entries: [string,string][] = [...preferred.filter(([key]) => properties[key] !== undefined), ...Object.entries(properties).filter(([key]) => !preferred.some(([p]) => p === key)).slice(0, 12).map(([key]) => [key,key] as [string,string])];
   for (const [key,label] of entries) {

@@ -1,0 +1,12 @@
+{
+  "name": "اطلس کرج | Karaj Atlas",
+  "short_name": "اطلس کرج",
+  "description": "نقشهٔ تعاملی دوبعدی و سه‌بعدی کرج",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a111d",
+  "theme_color": "#101a2a",
+  "orientation": "any"
+}

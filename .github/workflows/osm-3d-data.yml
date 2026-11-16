@@ -1,0 +1,27 @@
+name: Build Karaj OSM GeoJSON and 3D data
+on:
+  workflow_dispatch:
+  workflow_call:
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch OSM features (approximate study bbox)
+        run: python scripts/fetch_osm_karaj.py public/data/karaj-osm.geojson
+      - name: Prepare height metadata for extrusion
+        run: python scripts/build_3d_buildings.py public/data/karaj-osm.geojson public/data/karaj-3d.geojson
+      - name: Validate 3D dataset
+        run: python scripts/validate_osm_3d.py public/data/karaj-3d.geojson
+      - name: Upload source and 3D GeoJSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: karaj-osm-geojson-and-3d
+          path: |
+            public/data/karaj-osm.geojson
+            public/data/karaj-3d.geojson
+          retention-days: 14

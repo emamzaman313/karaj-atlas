@@ -1,5 +1,5 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
-import { normalizeFa } from './search/normalize';
+import { normalizeFa } from './search/normalize';\nimport { AtlasSearchIndex } from './search';
 import { geometryCenter } from './map/geometry';
 import { inspectGeoJSON } from './data/inspect';
 import { ThreeBuildingPreview } from './three/building-preview';
@@ -22,7 +22,7 @@ const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results')
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];
-let allSearchIndex: SearchItem[] = [];
+let allSearchIndex: SearchItem[] = [];\nconst rankedSearch=new AtlasSearchIndex();
 let localData: LocalCollection | null = null;
 const threePreview=new ThreeBuildingPreview();
 let threePreviewMounted=false;
@@ -102,7 +102,7 @@ async function addGeoJSON(): Promise<void> {
     map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
     geojsonReady = true;
     allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props=f.properties; if(!props || !Object.keys(props).length)return []; const label=String(props['name:fa'] || props.name || props['name:en'] || props.amenity || props.shop || props.highway || props.building || props['addr:street'] || 'عارضهٔ بدون نام'); return [{feature:f,label,props,center:geometryCenter(f.geometry)}]; });
-    searchIndex = allSearchIndex;
+    searchIndex = allSearchIndex;\n    rankedSearch.build(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
     setStatus(`دادهٔ محلی: ${report.total.toLocaleString('fa-IR')} عارضه · ساختمان ${report.buildings.toLocaleString('fa-IR')} · نام‌دار ${report.named.toLocaleString('fa-IR')} · مختصات نامعتبر ${report.invalidCoordinates.toLocaleString('fa-IR')}`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }
@@ -210,12 +210,8 @@ function wireUI(): void {
   search.addEventListener('input', () => {
     const query = normalizeFa(search.value);
     if (query.length < 2) { renderSearchResults([]); return; }
-    const mode = search.dataset.mode || 'name';
-    const hits = allSearchIndex.filter(item => Object.entries(item.props).some(([key, value]) => {
-      if (mode === 'name' && !key.startsWith('name')) return false;
-      if (mode === 'address' && !key.startsWith('addr:') && key !== 'name') return false;
-      return normalizeFa(safeText(value)).includes(query);
-    })).slice(0, 15);
+    const mode=(search.dataset.mode||'name') as 'name'|'address'|'all';
+    const hits=rankedSearch.search(search.value,mode,15).map(doc=>allSearchIndex.find(item=>item.feature===doc.feature)).filter((item):item is SearchItem=>Boolean(item));
     renderSearchResults(hits);
     setStatus(hits.length ? `جست‌وجو: ${hits.length} نتیجه` : 'نتیجه‌ای در دادهٔ محلی پیدا نشد.');
   });

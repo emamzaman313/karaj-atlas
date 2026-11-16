@@ -45,8 +45,11 @@ function featureCenter(geometry: import('geojson').Geometry | null): [number, nu
   return [points.reduce((sum, p) => sum + p[0], 0) / points.length, points.reduce((sum, p) => sum + p[1], 0) / points.length];
 }
 function normalizeFa(input: string): string {
-  return input.normalize('NFKC').replace(/[\u064A\u0649]/g,'ی').replace(/\u0643/g,'ک')
-    .replace(/[\u0640\u064B-\u065F\u0670]/g,'').replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-1776)).toLocaleLowerCase('fa').trim();
+  return input.normalize('NFKC').replace(/[يى]/g,'ی').replace(/ك/g,'ک')
+    .replace(/[ـًٌٍَُِّْ]/g,'')
+    .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632))
+    .replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-1776))
+    .toLocaleLowerCase('fa').trim();
 }
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';

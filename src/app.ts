@@ -128,8 +128,7 @@ function exportFeatureCSV(): void {
   const keys = Array.from(new Set(localData.features.flatMap(f => Object.keys(f.properties || {})))).sort();
   const quote = (value: unknown) => '"' + formatValue(value).replaceAll('"','""') + '"';
   const rows = [keys.map(quote).join(','), ...localData.features.map(f => keys.map(k => quote(f.properties?.[k])).join(','))];
-  const csv = '\uFEFF' + rows.join('\r
-');
+  const csv = '\uFEFF' + rows.join('\\r\\n');
   downloadBlob('karaj-attributes.csv', new Blob([csv], {type:'text/csv;charset=utf-8'}));
   setStatus('CSV ویژگی‌های محلی صادر شد.');
 }

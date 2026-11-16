@@ -15,7 +15,7 @@ const $ = <T extends HTMLElement>(selector: string): T => {
 const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results'), setStatus = (s: string) => { status.textContent = s; };
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
-let searchIndex: SearchItem[] = [];
+let searchIndex: SearchItem[] = [];\nlet localData: LocalCollection | null = null;
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
 function vectorStyle(): maplibregl.StyleSpecification {
   return { version: 8, sources: { karaj: { type: 'vector', url: 'pmtiles://' + new URL(config.archive, location.href).href } }, layers: [
@@ -69,7 +69,7 @@ function showFeature(properties: Props, fallback = 'عارضه'): void {
 async function addGeoJSON(): Promise<void> {
   try {
     const response = await fetch(config.geojson, { cache: 'no-store' }); if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`);
-    const data = await response.json() as LocalCollection;
+    const data = await response.json() as LocalCollection;\n    localData = data;
     if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('Invalid GeoJSON FeatureCollection');
     map!.addSource('karaj-osm-local', { type: 'geojson', data });
     map!.addLayer({ id: 'osm-buildings-2d', type: 'fill', source: 'karaj-osm-local', filter: ['has', 'building'], paint: { 'fill-color': '#d8b36a', 'fill-opacity': .35, 'fill-outline-color': '#e4c987' } });
@@ -93,6 +93,26 @@ function renderSearchResults(items: SearchItem[]): void {
   });
   resultsEl.hidden = items.length === 0;
 }
+function downloadBlob(filename: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob); const anchor=document.createElement('a');
+  anchor.href=url; anchor.download=filename; anchor.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportLocalGeoJSON(): void {
+  if (!localData) { setStatus('دادهٔ GeoJSON محلی بارگذاری نشده است.'); return; }
+  downloadBlob('karaj-osm-export.geojson',new Blob([JSON.stringify(localData)],{type:'application/geo+json'}));
+  setStatus('خروجی GeoJSON آماده شد.');
+}
+function exportFeatureCSV(): void {
+  if (!localData) { setStatus('دادهٔ محلی برای خروجی در دسترس نیست.'); return; }
+  const keys=Array.from(new Set(localData.features.flatMap(f=>Object.keys(f.properties||{})))).sort();
+  const quote=(v:unknown)=>'"'+formatValue(v).replaceAll('"','""')+'"';
+  const lines=[keys.map(quote).join(','),...localData.features.map(f=>keys.map(k=>quote(f.properties?.[k])).join(','))];
+  downloadBlob('karaj-attributes.csv',new Blob(['\\uFEFF'+lines.join('\\r\\n')],{type:'text/csv;charset=utf-8'}));
+  setStatus('CSV ویژگی‌های محلی صادر شد.');
+}
+function setSearchMode(mode:'name'|'address'|'all'):void {
+  const input=$('#search') as HTMLInputElement; input.dataset.mode=mode; input.placeholder=mode==='address'?'جست‌وجوی خیابان یا شماره…':mode==='all'?'جست‌وجوی همهٔ ویژگی‌ها…':'جست‌وجوی نام مکان…';
+}
 function toggle3D(on: boolean): void {
   if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); ($('#mode-3d') as HTMLInputElement).checked = false; return; }
   threeD = on; map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible'); map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
@@ -114,11 +134,11 @@ async function initMap(): Promise<void> {
 function wireUI(): void {
   document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input => input.addEventListener('change', () => toggleLayer(input.dataset.layer || '', input.checked)));
   $('#mode-3d').addEventListener('change', (event) => toggle3D((event.target as HTMLInputElement).checked));
-  $('#close-feature').addEventListener('click', () => { $('#feature-panel').hidden = true; });
+  $('#close-feature').addEventListener('click', () => { $('#feature-panel').hidden = true; });\n  $('#export-geojson')?.addEventListener('click',exportLocalGeoJSON);\n  $('#export-csv')?.addEventListener('click',exportFeatureCSV);\n  document.querySelectorAll<HTMLButtonElement>('[data-search-mode]').forEach(button=>button.addEventListener('click',()=>setSearchMode(button.dataset.searchMode as 'name'|'address'|'all')));
   $('#reset-view').addEventListener('click', () => map?.flyTo({ center: config.center, zoom: config.zoom, pitch: threeD ? 58 : 0, bearing: threeD ? -18 : 0, duration: 900 }));
   $('#search').addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key !== 'Enter') return; const query = (event.target as HTMLInputElement).value.trim().toLocaleLowerCase('fa'); if (!query) return;
-    const hits = searchIndex.filter(item => item.label.toLocaleLowerCase('fa').includes(query) || Object.entries(item.props).some(([key, value]) => key.startsWith('name:') && String(value).toLocaleLowerCase('fa').includes(query))).slice(0, 8);
+    const mode=(event.target as HTMLInputElement).dataset.mode||'name';\n    const hits = searchIndex.filter(item => { const entries=Object.entries(item.props); return entries.some(([key,value])=>{ if(mode==='name' && !key.startsWith('name')) return false; if(mode==='address' && !key.startsWith('addr:') && key!=='name') return false; return String(value).toLocaleLowerCase('fa').includes(query); }); }).slice(0, 12);
     if (!hits.length) { renderSearchResults([]); setStatus('نتیجه‌ای در دادهٔ محلی پیدا نشد؛ داده ممکن است ناقص باشد.'); return; }
     renderSearchResults(hits); setStatus('یافتن ' + hits.length + ' نتیجه؛ روی مورد دلخواه کلیک کنید.');
   });

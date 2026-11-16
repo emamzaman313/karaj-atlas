@@ -92,10 +92,11 @@ function showFeature(properties: Props, fallback = 'عارضه'): void {
   }
   $('#feature-panel').hidden = false;
 }
-async function addGeoJSON(): Promise<void> {
+async function addGeoJSON(override?: LocalCollection): Promise<void> {
   try {
-    const response = await fetch(config.geojson, { cache: 'no-store' }); if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`);
-    const data = await response.json() as LocalCollection;
+    let data: LocalCollection;
+    if (override) data = override;
+    else { const response = await fetch(config.geojson, { cache: 'no-store' }); if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`); data = await response.json() as LocalCollection; }
     if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('Invalid GeoJSON FeatureCollection');
     localData = data;
     const report=inspectGeoJSON(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
@@ -208,7 +209,7 @@ async function loadLocalCollection(data:LocalCollection,sourceLabel:string):Prom
  const clean=sanitizeGeoJSON(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
  localData=clean.data as LocalCollection;
  if(map?.getSource('karaj-osm-local'))(map.getSource('karaj-osm-local') as import('maplibre-gl').GeoJSONSource).setData(localData);
- else if(map?.isStyleLoaded())await addGeoJSON();
+ else if(map?.isStyleLoaded())await addGeoJSON(localData);
  allSearchIndex=localData.features.flatMap((f):SearchItem[]=>{const props=f.properties;if(!props||!Object.keys(props).length)return [];const label=String(props['name:fa']||props.name||props['name:en']||props.amenity||props.shop||props.highway||props.building||props['addr:street']||'عارضهٔ بدون نام');return [{feature:f,label,props,center:geometryCenter(f.geometry)}];});
  searchIndex=allSearchIndex;
  rankedSearch.build(localData as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
@@ -227,6 +228,7 @@ function wireUI(): void {
   const importInput=$('#geojson-import') as HTMLInputElement;
   importInput.addEventListener('change',async()=>{
     const file=importInput.files?.[0];if(!file)return;
+    if(file.size>200*1024*1024){setStatus('حجم GeoJSON بیش از سقف ۲۰۰ مگابایت است؛ فایل کوچک‌تر یا PMTiles استفاده کنید.');importInput.value='';return;}
     try{setStatus('در حال خواندن GeoJSON…');const parsed=JSON.parse(await file.text()) as LocalCollection;await loadLocalCollection(parsed,file.name);setStatus('ورود داده کامل شد؛ برای ماندگاری ذخیره را بزنید.');}
     catch(error){console.error(error);setStatus('فایل GeoJSON نامعتبر یا غیرقابل خواندن است.');}
   });

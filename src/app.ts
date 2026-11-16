@@ -5,6 +5,7 @@ import './style.css';
 
 type Props = Record<string, unknown> & { name?: string; 'name:fa'?: string; 'name:en'?: string; building?: string; highway?: string; amenity?: string; height_source?: string; render_height_m?: number; render_base_m?: number };
 type LocalFeature = import('geojson').Feature<import('geojson').Geometry, Props>;
+type LocalCollection = import('geojson').FeatureCollection<import('geojson').Geometry, Props>;
 type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };
 const $ = <T extends HTMLElement>(selector: string): T => {
   const el = document.querySelector<T>(selector);
@@ -50,7 +51,7 @@ function showFeature(properties: Props, fallback = 'عارضه'): void {
 async function addGeoJSON(): Promise<void> {
   try {
     const response = await fetch(config.geojson, { cache: 'no-store' }); if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`);
-    const data = await response.json() as import('geojson').FeatureCollection<import('geojson').Geometry, Props>;
+    const data = await response.json() as LocalCollection;
     if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('Invalid GeoJSON FeatureCollection');
     map!.addSource('karaj-osm-local', { type: 'geojson', data });
     map!.addLayer({ id: 'osm-buildings-2d', type: 'fill', source: 'karaj-osm-local', filter: ['has', 'building'], paint: { 'fill-color': '#d8b36a', 'fill-opacity': .35, 'fill-outline-color': '#e4c987' } });
@@ -61,7 +62,7 @@ async function addGeoJSON(): Promise<void> {
     map!.addLayer({ id: 'osm-roads-line', type: 'line', source: 'karaj-osm-local', filter: ['has', 'highway'], paint: { 'line-color': '#65b7d8', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .5, 16, 2.5] } });
     map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
     geojsonReady = true;
-    searchIndex = data.features.filter((f): f is LocalFeature => !!f.properties && !!(f.properties.name || f.properties['name:fa'] || f.properties['name:en'])).map(f => ({ feature: f, label: String(f.properties!['name:fa'] || f.properties!.name || f.properties!['name:en']), props: f.properties!, center: featureCenter(f.geometry) }));
+    searchIndex = data.features.flatMap((f): SearchItem[] => { const props = f.properties; if (!props || !(props.name || props['name:fa'] || props['name:en'])) return []; return [{ feature: f, label: String(props['name:fa'] || props.name || props['name:en']), props, center: featureCenter(f.geometry) }]; });
     setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }

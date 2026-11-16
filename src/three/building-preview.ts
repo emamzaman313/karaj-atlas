@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Feature, Geometry, Polygon, MultiPolygon } from 'geojson';
 type BuildingProps=Record<string,unknown>&{building?:string;render_height_m?:number;height_source?:string};
-type BuildingFeature=Feature<Geometry,BuildingProps>;
+export type BuildingFeature=Feature<Geometry,BuildingProps>;
 export type PreviewOrigin={lng:number;lat:number};
 const METERS_PER_DEG=111320;
 function localXY(coord:number[],origin:PreviewOrigin):[number,number]{

@@ -1,0 +1,61 @@
+name: Build Karaj PMTiles dataset
+on:
+  workflow_dispatch:
+    inputs:
+      bbox:
+        description: "SOUTH,WEST,NORTH,EAST (approximate study extent)"
+        required: false
+        default: "35.70,50.88,35.98,51.12"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run data regression tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Extract OpenStreetMap data
+        run: python scripts/karaj_data_pipeline.py --bbox "${{ inputs.bbox }}"
+      - name: Validate source GeoJSON
+        run: python scripts/validate_geojson.py public/data/karaj-osm.geojson
+      - name: Split semantic layers
+        run: python scripts/split_osm_layers.py public/data/karaj-osm.geojson --out-dir public/data/vector
+      - name: Install Tippecanoe build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsqlite3-dev zlib1g-dev libprotobuf-dev protobuf-compiler
+      - name: Build Tippecanoe from source
+        run: |
+          git clone --depth 1 https://github.com/felt/tippecanoe.git /tmp/tippecanoe
+          make -C /tmp/tippecanoe -j2
+          sudo make -C /tmp/tippecanoe install
+          tippecanoe --version
+      - name: Generate multi-layer PMTiles archive
+        run: |
+          tippecanoe -o public/data/karaj.pmtiles -zg --drop-densest-as-needed --extend-zooms-if-still-dropping --force \
+            -L building:public/data/vector/building.geojson \
+            -L transportation:public/data/vector/transportation.geojson \
+            -L landuse:public/data/vector/landuse.geojson \
+            -L water:public/data/vector/water.geojson \
+            -L poi:public/data/vector/poi.geojson \
+            --name "Karaj Atlas" \
+            --description "OpenStreetMap-derived vector layers for Karaj study extent" \
+            --attribution "© OpenStreetMap contributors"
+          test -s public/data/karaj.pmtiles
+          ls -lh public/data/karaj.pmtiles
+      - name: Upload complete dataset bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: karaj-pmtiles-${{ github.run_number }}
+          path: |
+            public/data/karaj.pmtiles
+            public/data/karaj-osm.geojson
+            public/data/karaj-data-report.json
+            public/data/vector/*.geojson
+            public/data/vector/layers-report.json
+          retention-days: 30

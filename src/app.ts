@@ -1,4 +1,4 @@
-import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';\nimport { normalizeFa } from './search/normalize';
+import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';\nimport { normalizeFa } from './search/normalize';\nimport { geometryCenter } from './map/geometry';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -32,17 +32,6 @@ async function chooseStyle(): Promise<maplibregl.StyleSpecification> {
     const protocol = new Protocol(); maplibregl.addProtocol('pmtiles', protocol.tile);
     archive = new PMTiles(new URL(config.archive, location.href).href); await archive.getHeader(); protocol.add(archive); usingLocal = true; return vectorStyle();
   } catch (error) { console.info('Local PMTiles unavailable; raster fallback.', error); return onlineStyle; }
-}
-function featureCenter(geometry: import('geojson').Geometry | null): [number, number] | null {
-  if (!geometry) return null;
-  const points: [number, number][] = [];
-  const walk = (value: unknown): void => {
-    if (Array.isArray(value) && typeof value[0] === 'number' && typeof value[1] === 'number') points.push([value[0], value[1]]);
-    else if (Array.isArray(value)) value.forEach(walk);
-  };
-  if ('coordinates' in geometry) walk(geometry.coordinates);
-  if (!points.length) return null;
-  return [points.reduce((sum, p) => sum + p[0], 0) / points.length, points.reduce((sum, p) => sum + p[1], 0) / points.length];
 }
 function safeText(value:unknown):string {
   if(value===null||value===undefined)return '';
@@ -101,7 +90,7 @@ async function addGeoJSON(): Promise<void> {
     map!.addLayer({ id: 'osm-roads-line', type: 'line', source: 'karaj-osm-local', filter: ['has', 'highway'], paint: { 'line-color': '#65b7d8', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .5, 16, 2.5] } });
     map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
     geojsonReady = true;
-    allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props = f.properties; if (!props || !(props.name || props['name:fa'] || props['name:en'])) return []; return [{ feature: f, label: String(props['name:fa'] || props.name || props['name:en']), props, center: featureCenter(f.geometry) }]; });
+    allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props = f.properties; if (!props || !(props.name || props['name:fa'] || props['name:en'])) return []; return [{ feature: f, label: String(props['name:fa'] || props.name || props['name:en']), props, center: geometryCenter(f.geometry) }]; });
     searchIndex = allSearchIndex;\n    setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }

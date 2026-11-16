@@ -1,0 +1,30 @@
+name: Karaj OSM data pipeline
+on:
+  workflow_dispatch:
+    inputs:
+      bbox:
+        description: "SOUTH,WEST,NORTH,EAST (approximate study extent)"
+        required: false
+        default: "35.70,50.88,35.98,51.12"
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Extract OSM and create QA report
+        run: python scripts/karaj_data_pipeline.py --bbox "${{ inputs.bbox }}"
+      - name: Validate GeoJSON and report
+        run: python scripts/validate_geojson.py public/data/karaj-osm.geojson
+      - uses: actions/upload-artifact@v4
+        with:
+          name: karaj-osm-dataset-${{ github.run_number }}
+          path: |
+            public/data/karaj-osm.geojson
+            public/data/karaj-data-report.json
+          retention-days: 14

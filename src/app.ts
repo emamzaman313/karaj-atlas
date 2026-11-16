@@ -193,7 +193,7 @@ async function initMap(): Promise<void> {
   map = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: {}, style });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
   map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
-  map.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); await addGeoJSON(); });
+  map.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } });
   map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
   map.on('click', (event: MapLayerMouseEvent) => {
     const feature=map!.queryRenderedFeatures(event.point).find(f=>f.source==='karaj-osm-local')||map!.queryRenderedFeatures(event.point)[0];

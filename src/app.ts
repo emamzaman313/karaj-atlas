@@ -108,7 +108,7 @@ async function addGeoJSON(): Promise<void> {
       'fill-extrusion-height': ['to-number', ['get', 'render_height_m'], 9], 'fill-extrusion-base': ['to-number', ['get', 'render_base_m'], 0], 'fill-extrusion-opacity': .88
     } });
     map!.addLayer({ id: 'osm-roads-line', type: 'line', source: 'karaj-osm-local', filter: ['has', 'highway'], paint: { 'line-color': '#65b7d8', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .5, 16, 2.5] } });
-    map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
+    map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare'], ['has', 'public_transport']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
     geojsonReady = true;
     allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props=f.properties; if(!props || !Object.keys(props).length)return []; const label=String(props['name:fa'] || props.name || props['name:en'] || props.amenity || props.shop || props.highway || props.building || props['addr:street'] || 'عارضهٔ بدون نام'); return [{feature:f,label,props,center:geometryCenter(f.geometry)}]; });
     searchIndex = allSearchIndex;
@@ -253,7 +253,7 @@ function wireUI(): void {
     const query = normalizeFa(search.value);
     if (query.length < 2) { renderSearchResults([]); return; }
     const mode=(search.dataset.mode||'name') as 'name'|'address'|'all';
-    const hits=rankedSearch.search(search.value,mode,15).map(doc=>allSearchIndex.find(item=>item.feature===doc.feature)).filter((item):item is SearchItem=>Boolean(item));
+    const hits=rankedSearch.search(search.value,mode,25).map(doc=>allSearchIndex.find(item=>item.feature===doc.feature)).filter((item):item is SearchItem=>Boolean(item));
     renderSearchResults(hits);
     setStatus(hits.length ? `جست‌وجو: ${hits.length} نتیجه` : 'نتیجه‌ای در دادهٔ محلی پیدا نشد.');
   });

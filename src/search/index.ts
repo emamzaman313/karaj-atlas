@@ -5,7 +5,7 @@ export type AtlasFeatureCollection=FeatureCollection<Geometry,Record<string,unkn
 export type SearchDocument={feature:AtlasFeature;label:string;normalized:string;properties:Record<string,unknown>;tokens:string[]};
 const valueText=(value:unknown):string=>Array.isArray(value)?value.map(valueText).join(' '):String(value??'');
 const normalize=(value:unknown):string=>normalizeFa(valueText(value)).replace(/[\u200c\u200d]/g,' ').replace(/\s+/g,' ').trim();
-const fields={name:['name:fa','name','name:en','official_name','alt_name','short_name'],address:['addr:street','addr:place','addr:housenumber','addr:suburb','addr:district','addr:city','addr:postcode'],kind:['amenity','shop','tourism','historic','healthcare','public_transport','highway','building','leisure','office'];
+const fields={name:['name:fa','name','name:en','official_name','alt_name','short_name'],address:['addr:street','addr:place','addr:housenumber','addr:suburb','addr:district','addr:city','addr:postcode'],kind:['amenity','shop','tourism','historic','healthcare','public_transport','highway','building','leisure','office']};
 export class AtlasSearchIndex{
  private documents:SearchDocument[]=[];
  build(collection:AtlasFeatureCollection):void{

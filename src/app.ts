@@ -11,7 +11,7 @@ const $ = <T extends HTMLElement>(selector: string): T => {
   if (!el) throw new Error(`Required UI element missing: ${selector}`);
   return el;
 };
-const status = $('#status'), mapEl = $('#map'), setStatus = (s: string) => { status.textContent = s; };
+const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results'), setStatus = (s: string) => { status.textContent = s; };
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];
@@ -65,7 +65,7 @@ async function addGeoJSON(): Promise<void> {
     setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }
-function toggle3D(on: boolean): void {
+function renderSearchResults(items: SearchItem[]): void {\n  resultsEl.replaceChildren();\n  items.forEach((item, index) => {\n    const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result'; button.textContent = item.label; button.title = item.label;\n    button.addEventListener('click', () => { if (item.center) map?.flyTo({ center: item.center, zoom: 16, duration: 900 }); showFeature(item.props, item.label); });\n    resultsEl.append(button);\n  });\n  resultsEl.hidden = items.length === 0;\n}\nfunction toggle3D(on: boolean): void {
   if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); $('#mode-3d').checked = false; return; }
   threeD = on; map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible'); map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
   map.easeTo({ pitch: on ? 58 : 0, bearing: on ? -18 : 0, duration: 850 }); setStatus(on ? 'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع‌ها با برچسب منبع' : 'نمای دوبعدی فعال');

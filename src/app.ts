@@ -3,7 +3,7 @@ import { normalizeFa } from './search/normalize';
 import { AtlasSearchIndex } from './search';
 import { geometryCenter } from './map/geometry';
 import { LAYERS, DEFAULT_VISIBILITY, type LayerId } from './map/layers';
-import { inspectGeoJSON } from './data/inspect';
+import { inspectGeoJSON } from './data/inspect';\nimport { sanitizeGeoJSON } from './data/sanitize';\nimport { saveDataset, loadDataset, listDatasets } from './data/local-store';
 import { ThreeBuildingPreview } from './three/building-preview';
 import { watchNetwork } from './core/network';
 import { PMTiles, Protocol } from 'pmtiles';
@@ -188,12 +188,42 @@ async function initMap(): Promise<void> {
     }
   });
 }
+async function loadLocalCollection(data:LocalCollection,sourceLabel:string):Promise<void>{
+ const clean=sanitizeGeoJSON(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
+ localData=clean.data as LocalCollection;
+ if(map?.getSource('karaj-osm-local'))(map.getSource('karaj-osm-local') as import('maplibre-gl').GeoJSONSource).setData(localData);
+ else if(map?.isStyleLoaded())await addGeoJSON();
+ allSearchIndex=localData.features.flatMap((f):SearchItem[]=>{const props=f.properties;if(!props||!Object.keys(props).length)return [];const label=String(props['name:fa']||props.name||props['name:en']||props.amenity||props.shop||props.highway||props.building||props['addr:street']||'عارضهٔ بدون نام');return [{feature:f,label,props,center:geometryCenter(f.geometry)}];});
+ searchIndex=allSearchIndex;
+ rankedSearch.build(localData as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
+ const report=inspectGeoJSON(localData as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
+ setStatus(`${sourceLabel}: ${report.total.toLocaleString('fa-IR')} عارضه · ${clean.report.skipped.toLocaleString('fa-IR')} حذف/نامعتبر`);
+}
+async function refreshStorageInfo():Promise<void>{
+ const items=await listDatasets();$('#storage-info').textContent=items.length?items.map(x=>`${x.name} · ${x.features.toLocaleString('fa-IR')} عارضه · ${(x.bytes/1048576).toFixed(1)} MB`).join(' | '):'هنوز داده‌ای ذخیره نشده است.';
+}
 function wireUI(): void {
   document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input =>
     input.addEventListener('change', () => toggleLayer(input.dataset.layer || '', input.checked)));
   $('#mode-3d').addEventListener('change', event => toggle3D((event.target as HTMLInputElement).checked));
   $('#close-feature').addEventListener('click', () => { $('#feature-panel').hidden = true; });
   $('#export-geojson')?.addEventListener('click', exportLocalGeoJSON);
+  const importInput=$('#geojson-import') as HTMLInputElement;
+  importInput.addEventListener('change',async()=>{
+    const file=importInput.files?.[0];if(!file)return;
+    try{setStatus('در حال خواندن GeoJSON…');const parsed=JSON.parse(await file.text()) as LocalCollection;await loadLocalCollection(parsed,file.name);setStatus('ورود داده کامل شد؛ برای ماندگاری ذخیره را بزنید.');}
+    catch(error){console.error(error);setStatus('فایل GeoJSON نامعتبر یا غیرقابل خواندن است.');}
+  });
+  $('#save-local-data')?.addEventListener('click',async()=>{
+    if(!localData){setStatus('ابتدا GeoJSON وارد یا دریافت کنید.');return;}
+    try{const info=await saveDataset('karaj-main',localData as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);await refreshStorageInfo();setStatus(`ذخیره شد · ${info.features.toLocaleString('fa-IR')} عارضه`);}
+    catch(error){console.error(error);setStatus('ذخیره مرورگر ناموفق؛ ظرفیت/مجوز را بررسی کنید.');}
+  });
+  $('#load-local-data')?.addEventListener('click',async()=>{
+    try{const saved=await loadDataset('karaj-main');if(!saved){setStatus('ذخیره‌ای با نام karaj-main پیدا نشد.');return;}await loadLocalCollection(saved as LocalCollection,'بازیابی IndexedDB');await refreshStorageInfo();}
+    catch(error){console.error(error);setStatus('بازیابی IndexedDB ناموفق شد.');}
+  });
+  void refreshStorageInfo();
   $('#export-csv')?.addEventListener('click', exportFeatureCSV);
   document.querySelectorAll<HTMLButtonElement>('[data-search-mode]').forEach(button =>
     button.addEventListener('click', () => setSearchMode(button.dataset.searchMode as 'name'|'address'|'all')));

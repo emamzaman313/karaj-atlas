@@ -1,6 +1,6 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
-import { geometryCenter, geometryBounds } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';\nimport { watchNetwork } from './core/network';
+import { geometryCenter, geometryBounds } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';\nimport { ThreeBuildingPreview } from './three/building-preview';\nimport { watchNetwork } from './core/network';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -20,7 +20,7 @@ const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geoj
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];
 let allSearchIndex: SearchItem[] = [];
-let localData: LocalCollection | null = null;
+let localData: LocalCollection | null = null;\nconst threePreview=new ThreeBuildingPreview();\nlet threePreviewMounted=false;
 let layerState:LayerState={roads:true,buildings:true,water:true,land:true,poi:true};
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
 function vectorStyle(): maplibregl.StyleSpecification {
@@ -191,6 +191,15 @@ function wireUI(): void {
   }));
   $('#show-all-layers')?.addEventListener('click', () => setAllLayers(true));
   $('#hide-all-layers')?.addEventListener('click', () => setAllLayers(false));
+  $('#toggle-three-preview')?.addEventListener('click',()=>{
+    const panel=$('#three-panel');panel.hidden=!panel.hidden;
+    if(panel.hidden)return;
+    if(!localData){setStatus('برای نمای Three.js ابتدا GeoJSON محلی را دریافت کنید.');panel.hidden=true;return;}
+    if(!threePreviewMounted){threePreview.mount($('#three-canvas') as HTMLCanvasElement);threePreviewMounted=true;}
+    const buildings=localData.features.filter(f=>Boolean(f.properties?.building)) as import('./three/building-preview').BuildingFeature[];
+    const count=threePreview.setBuildings(buildings,{lng:config.center[0],lat:config.center[1]});
+    setStatus(`Three.js: ${count.toLocaleString('fa-IR')} footprint در محدودهٔ مدل`);
+  });
   const search = $('#search') as HTMLInputElement;
   search.addEventListener('input', () => {
     const query = normalizeFa(search.value);

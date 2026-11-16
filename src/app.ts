@@ -158,6 +158,14 @@ function toggle3D(on: boolean): void {
   threeD = on; map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible'); map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
   map.easeTo({ pitch: on ? 58 : 0, bearing: on ? -18 : 0, duration: 850 }); setStatus(on ? 'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع‌ها با برچسب منبع' : 'نمای دوبعدی فعال');
 }
+function applyLayerState():void {
+  (Object.keys(layerState) as (keyof LayerState)[]).forEach(name=>toggleLayer(name,layerState[name]));
+}
+function setAllLayers(visible:boolean):void {
+  (Object.keys(layerState) as (keyof LayerState)[]).forEach(name=>{layerState[name]=visible;});
+  document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input=>input.checked=visible);
+  applyLayerState();
+}
 function toggleLayer(name: string, visible: boolean): void {
   const ids: Record<string, string[]> = { roads: ['roads', 'osm-roads-line'], buildings: ['buildings', 'osm-buildings-2d', 'osm-buildings-3d'], water: ['water'], land: ['land'], poi: ['osm-poi-circle'] };
   ids[name]?.forEach(id => { if (map?.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); });\n  if(name in layerState)layerState[name as keyof LayerState]=visible;
@@ -184,7 +192,7 @@ function wireUI(): void {
   $('#export-geojson')?.addEventListener('click',exportLocalGeoJSON);
   $('#export-csv')?.addEventListener('click',exportFeatureCSV);
   document.querySelectorAll<HTMLButtonElement>('[data-search-mode]').forEach(button=>button.addEventListener('click',()=>setSearchMode(button.dataset.searchMode as 'name'|'address'|'all')));
-  $('#reset-view').addEventListener('click', () => map?.flyTo({ center: config.center, zoom: config.zoom, pitch: threeD ? 58 : 0, bearing: threeD ? -18 : 0, duration: 900 }));
+  $('#reset-view').addEventListener('click', () => map?.flyTo({ center: config.center, zoom: config.zoom, pitch: threeD ? 58 : 0, bearing: threeD ? -18 : 0, duration: 900 }));\n  $('#show-all-layers')?.addEventListener('click',()=>setAllLayers(true));\n  $('#hide-all-layers')?.addEventListener('click',()=>setAllLayers(false));
   $('#search').addEventListener('input', (event: Event) => {
     const input=event.target as HTMLInputElement;
     const query=normalizeFa(input.value);

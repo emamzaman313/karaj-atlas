@@ -9,6 +9,7 @@
 - `scripts/split_osm_layers.py`: تفکیک FeatureCollection به لایه‌های `building`، `transportation`، `landuse`، `water` و `poi`؛ یک عارضه می‌تواند در چند لایهٔ معنایی حضور داشته باشد.
 - `tests/test_data_pipeline.py` و `tests/test_split_layers.py`: تست‌های بدون اینترنت.
 - `.github/workflows/karaj-data-pipeline.yml`: تست، استخراج، QA، split و ذخیرهٔ artifact چهارده‌روزه.
+- `.github/workflows/build-karaj-pmtiles.yml`: اجرای دستی end-to-end؛ استخراج OSM، QA، split، build Tippecanoe و خروجی PMTiles چندلایه در artifact سی‌روزه.
 - UI: واردکردن GeoJSON و ذخیره/بازیابی در IndexedDB.
 
 ## اجرای محلی
@@ -19,7 +20,10 @@ python scripts/validate_geojson.py public/data/karaj-osm.geojson
 python scripts/split_osm_layers.py public/data/karaj-osm.geojson --out-dir public/data/vector
 ```
 
-## ساخت PMTiles (پس از استخراج واقعی)
+## ساخت PMTiles (workflow خودکار)
+در GitHub → Actions → **Build Karaj PMTiles dataset** → Run workflow، bbox را (در صورت نیاز) وارد کنید. این workflow داده را از Overpass دریافت می‌کند، تست و QA را اجرا می‌کند، Tippecanoe را build کرده و فایل `karaj.pmtiles` و GeoJSONها را در artifact قرار می‌دهد. این اجرا دستی است و با commitهای عادی، درخواست سنگین Overpass اجرا نمی‌شود.
+
+## ساخت PMTiles (محلی، پس از استخراج واقعی)
 با نصب Tippecanoe:
 ```bash
 tippecanoe -o public/data/karaj.pmtiles -zg --drop-densest-as-needed \

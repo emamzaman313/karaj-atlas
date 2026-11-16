@@ -23,6 +23,8 @@ jobs:
         run: python scripts/karaj_data_pipeline.py --bbox "${{ inputs.bbox }}"
       - name: Validate source GeoJSON
         run: python scripts/validate_geojson.py public/data/karaj-osm.geojson
+      - name: Prepare height-aware 3D buildings GeoJSON
+        run: python scripts/build_3d_buildings.py public/data/karaj-osm.geojson public/data/karaj-3d.geojson
       - name: Split semantic layers
         run: python scripts/split_osm_layers.py public/data/karaj-osm.geojson --out-dir public/data/vector
       - name: Install Tippecanoe build dependencies
@@ -44,6 +46,7 @@ jobs:
           path: |
             public/data/karaj.pmtiles
             public/data/karaj-osm.geojson
+            public/data/karaj-3d.geojson
             public/data/karaj-data-report.json
             public/data/vector/*.geojson
             public/data/vector/layers-report.json

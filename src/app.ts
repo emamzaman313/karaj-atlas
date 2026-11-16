@@ -1,6 +1,9 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
-import { geometryCenter, geometryBounds } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';\nimport { ThreeBuildingPreview } from './three/building-preview';\nimport { watchNetwork } from './core/network';
+import { geometryCenter, geometryBounds } from './map/geometry';
+import { inspectGeoJSON } from './data/inspect';
+import { ThreeBuildingPreview } from './three/building-preview';
+import { watchNetwork } from './core/network';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -20,7 +23,9 @@ const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geoj
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];
 let allSearchIndex: SearchItem[] = [];
-let localData: LocalCollection | null = null;\nconst threePreview=new ThreeBuildingPreview();\nlet threePreviewMounted=false;
+let localData: LocalCollection | null = null;
+const threePreview=new ThreeBuildingPreview();
+let threePreviewMounted=false;
 let layerState:LayerState={roads:true,buildings:true,water:true,land:true,poi:true};
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
 function vectorStyle(): maplibregl.StyleSpecification {
@@ -123,7 +128,8 @@ function exportFeatureCSV(): void {
   const keys = Array.from(new Set(localData.features.flatMap(f => Object.keys(f.properties || {})))).sort();
   const quote = (value: unknown) => '"' + formatValue(value).replaceAll('"','""') + '"';
   const rows = [keys.map(quote).join(','), ...localData.features.map(f => keys.map(k => quote(f.properties?.[k])).join(','))];
-  const csv = '\uFEFF' + rows.join('\r\n');
+  const csv = '\uFEFF' + rows.join('\r
+');
   downloadBlob('karaj-attributes.csv', new Blob([csv], {type:'text/csv;charset=utf-8'}));
   setStatus('CSV ویژگی‌های محلی صادر شد.');
 }
@@ -218,4 +224,6 @@ function wireUI(): void {
     if (event.key === 'Enter') resultsEl.querySelector<HTMLButtonElement>('.search-result')?.click();
   });
 }
-wireUI();\nwatchNetwork(state=>{const badge=$('#network-state');badge.textContent=state==='online'?'آنلاین':'آفلاین';badge.dataset.state=state;});\nvoid initMap();
+wireUI();
+watchNetwork(state=>{const badge=$('#network-state');badge.textContent=state==='online'?'آنلاین':'آفلاین';badge.dataset.state=state;});
+void initMap();

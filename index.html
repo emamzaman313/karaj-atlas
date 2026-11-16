@@ -1,19 +1,16 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0a111d"><title>اطلس کرج | Karaj Atlas</title></head>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0a111d"><title>اطلس کرج | Karaj Atlas</title></head>
 <body>
-<header><div class="brand"><div class="logo">ک</div><div><h1>اطلس کرج</h1><div class="subtitle">Karaj Atlas · اطلس شهری داده‌محور و آفلاین‌محور</div></div></div><button id="reset-view">بازنشانی دید</button></header>
-<div class="workspace">
-<aside>
+<header><div class="brand"><div class="logo">ک</div><div><h1>اطلس کرج</h1><div class="subtitle">Karaj Atlas · داده‌محور، 2D/3D، آفلاین‌محور</div></div></div><button id="reset-view">بازنشانی دید</button></header>
+<div class="workspace"><aside>
 <div class="panel"><h2>جست‌وجوی شهری</h2><input id="search" type="search" placeholder="نام محله، خیابان یا مکان…"><p class="muted">نمایهٔ جست‌وجو در مرحلهٔ بعد ساخته می‌شود.</p></div>
-<div class="panel"><h2>لایه‌ها</h2><label><input type="checkbox" data-layer="roads" checked> راه‌های OSM محلی</label><label><input type="checkbox" data-layer="buildings" checked> ساختمان‌های OSM</label><label><input type="checkbox" data-layer="poi" checked> مکان‌های مهم</label><label><input type="checkbox" data-layer="water" checked> آب (در PMTiles)</label><label><input type="checkbox" data-layer="land" checked> کاربری زمین (در PMTiles)</label><p class="muted">لایه‌های محلی از فایل GeoJSON یا PMTiles خوانده می‌شوند.</p></div>
-<div class="panel"><h2>دریافت دادهٔ اولیه</h2><p class="muted">در ریشهٔ پروژه اجرا کنید:</p><code dir="ltr">python scripts/fetch_osm_karaj.py public/data/karaj-osm.geojson</code><p class="muted">این محدوده مستطیلی تقریبی است، نه مرز رسمی شهر. برای extract کامل از Geofabrik و clip مرز مستند استفاده کنید.</p></div>
+<div class="panel"><h2>لایه‌ها</h2><label><input type="checkbox" data-layer="roads" checked> راه‌ها</label><label><input type="checkbox" data-layer="buildings" checked> ساختمان‌ها</label><label><input type="checkbox" data-layer="poi" checked> مکان‌های مهم</label><label><input type="checkbox" data-layer="water" checked> آب (PMTiles)</label><label><input type="checkbox" data-layer="land" checked> کاربری زمین (PMTiles)</label><label class="mode"><input id="mode-3d" type="checkbox"> نمای سه‌بعدی ساختمان‌ها</label></div>
+<div class="panel"><h2>راهنمای ارتفاع</h2><p><span class="dot verified"></span> ارتفاع ثبت‌شده در OSM</p><p><span class="dot estimate"></span> تخمین از تعداد طبقات</p><p><span class="dot unknown"></span> ارتفاع بصری جایگزین (نامعلوم)</p><small class="muted">ارتفاع‌های تخمینی یا جایگزین، واقعیت اندازه‌گیری‌شده نیستند.</small></div>
+<div class="panel"><h2>دریافت داده</h2><code dir="ltr">python scripts/fetch_osm_karaj.py public/data/karaj-osm.geojson</code><br><code dir="ltr">python scripts/build_3d_buildings.py public/data/karaj-osm.geojson public/data/karaj-3d.geojson</code><p class="muted">bbox تقریبی است؛ مرز رسمی نیست.</p></div>
 <div class="panel"><h2>وضعیت</h2><div id="status">در انتظار نقشه…</div></div>
-<div class="panel"><h2>اطلاعات عارضه</h2><div id="feature-panel" hidden><div class="feature-head"><strong id="feature-title"></strong><button id="close-feature">×</button></div><p id="feature-info"></p></div><p class="muted">برای دیدن اطلاعات روی عارضه کلیک کنید.</p></div>
-<div class="panel"><h2>منابع و مجوز</h2><p class="muted">OpenStreetMap · Geofabrik · MapLibre · PMTiles</p><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors · ODbL</a></div>
+<div class="panel"><h2>اطلاعات عارضه</h2><div id="feature-panel" hidden><div class="feature-head"><strong id="feature-title"></strong><button id="close-feature">×</button></div><p id="feature-info"></p></div><p class="muted">برای جزئیات روی عارضه کلیک کنید.</p></div>
+<div class="panel"><h2>منابع</h2><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors · ODbL</a></div>
 </aside>
-<div id="map" tabindex="0" aria-label="نقشهٔ تعاملی کرج"><div id="loading"><div class="load-card"><strong>اطلس کرج</strong><p>در حال آماده‌سازی نقشه…</p><small>اتصال اینترنت برای نقشهٔ پایه لازم است.</small></div></div></div>
-</div>
-<footer>نسخهٔ توسعه · نقشهٔ پایه آنلاین؛ overlayهای OSM پس از دریافت GeoJSON · آفلاین با PMTiles محلی</footer>
-<script type="module" src="/src/app.js"></script>
-</body></html>
+<div id="map" tabindex="0" aria-label="نقشهٔ تعاملی کرج"><div id="loading"><div class="load-card"><strong>اطلس کرج</strong><p>در حال آماده‌سازی نقشه…</p><small>اتصال اینترنت برای نقشهٔ پایه لازم است.</small></div></div></div></div>
+<footer>پیش‌نمایش آنلاین + لایه‌های محلی · 3D با دادهٔ ارتفاع‌دار OSM</footer>
+<script type="module" src="/src/app.js"></script></body></html>

@@ -6,7 +6,7 @@ import './style.css';
 type Props = Record<string, unknown> & { name?: string; 'name:fa'?: string; 'name:en'?: string; building?: string; highway?: string; amenity?: string; height_source?: string; render_height_m?: number; render_base_m?: number };
 type LocalFeature = import('geojson').Feature<import('geojson').Geometry, Props>;
 type LocalCollection = import('geojson').FeatureCollection<import('geojson').Geometry, Props>;
-type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };
+type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };\ntype LayerState = { roads:boolean; buildings:boolean; water:boolean; land:boolean; poi:boolean };
 const $ = <T extends HTMLElement>(selector: string): T => {
   const el = document.querySelector<T>(selector);
   if (!el) throw new Error(`Required UI element missing: ${selector}`);
@@ -16,7 +16,7 @@ const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results')
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];\nlet allSearchIndex: SearchItem[] = [];
-let localData: LocalCollection | null = null;
+let localData: LocalCollection | null = null;\nlet layerState:LayerState={roads:true,buildings:true,water:true,land:true,poi:true};
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
 function vectorStyle(): maplibregl.StyleSpecification {
   return { version: 8, sources: { karaj: { type: 'vector', url: 'pmtiles://' + new URL(config.archive, location.href).href } }, layers: [
@@ -50,6 +50,25 @@ function normalizeFa(input: string): string {
     .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632))
     .replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-1776))
     .toLocaleLowerCase('fa').trim();
+}
+function safeText(value:unknown):string {
+  if(value===null||value===undefined)return '';
+  if(typeof value==='string'||typeof value==='number'||typeof value==='boolean')return String(value);
+  return JSON.stringify(value);
+}
+function coordinatesOf(geometry:import('geojson').Geometry|null):[number,number][] {
+  const result:[number,number][]=[];
+  const walk=(v:unknown):void=>{
+    if(Array.isArray(v)&&typeof v[0]==='number'&&typeof v[1]==='number'&&Number.isFinite(v[0])&&Number.isFinite(v[1]))result.push([v[0],v[1]]);
+    else if(Array.isArray(v))v.forEach(walk);
+  };
+  if(geometry&&'coordinates'in geometry)walk(geometry.coordinates);
+  return result;
+}
+function geometryBounds(geometry:import('geojson').Geometry|null):[[number,number],[number,number]]|null {
+  const pts=coordinatesOf(geometry);if(!pts.length)return null;
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  return [[Math.min(...xs),Math.min(...ys)],[Math.max(...xs),Math.max(...ys)]];
 }
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
@@ -141,7 +160,7 @@ function toggle3D(on: boolean): void {
 }
 function toggleLayer(name: string, visible: boolean): void {
   const ids: Record<string, string[]> = { roads: ['roads', 'osm-roads-line'], buildings: ['buildings', 'osm-buildings-2d', 'osm-buildings-3d'], water: ['water'], land: ['land'], poi: ['osm-poi-circle'] };
-  ids[name]?.forEach(id => { if (map?.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); });
+  ids[name]?.forEach(id => { if (map?.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); });\n  if(name in layerState)layerState[name as keyof LayerState]=visible;
 }
 async function initMap(): Promise<void> {
   const style = await chooseStyle();

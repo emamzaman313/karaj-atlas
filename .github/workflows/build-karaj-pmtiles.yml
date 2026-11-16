@@ -35,19 +35,8 @@ jobs:
           make -C /tmp/tippecanoe -j2
           sudo make -C /tmp/tippecanoe install
           tippecanoe --version
-      - name: Generate multi-layer PMTiles archive
-        run: |
-          tippecanoe -o public/data/karaj.pmtiles -zg --drop-densest-as-needed --extend-zooms-if-still-dropping --force \
-            -L building:public/data/vector/building.geojson \
-            -L transportation:public/data/vector/transportation.geojson \
-            -L landuse:public/data/vector/landuse.geojson \
-            -L water:public/data/vector/water.geojson \
-            -L poi:public/data/vector/poi.geojson \
-            --name "Karaj Atlas" \
-            --description "OpenStreetMap-derived vector layers for Karaj study extent" \
-            --attribution "© OpenStreetMap contributors"
-          test -s public/data/karaj.pmtiles
-          ls -lh public/data/karaj.pmtiles
+      - name: Generate and verify multi-layer PMTiles archive
+        run: bash scripts/build_pmtiles.sh public/data/karaj.pmtiles public/data/vector
       - name: Upload complete dataset bundle
         uses: actions/upload-artifact@v4
         with:

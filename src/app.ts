@@ -1,4 +1,6 @@
-import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';\nimport { normalizeFa } from './search/normalize';\nimport { geometryCenter } from './map/geometry';
+import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
+import { normalizeFa } from './search/normalize';
+import { geometryCenter } from './map/geometry';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -6,7 +8,8 @@ import './style.css';
 type Props = Record<string, unknown> & { name?: string; 'name:fa'?: string; 'name:en'?: string; building?: string; highway?: string; amenity?: string; height_source?: string; render_height_m?: number; render_base_m?: number };
 type LocalFeature = import('geojson').Feature<import('geojson').Geometry, Props>;
 type LocalCollection = import('geojson').FeatureCollection<import('geojson').Geometry, Props>;
-type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };\ntype LayerState = { roads:boolean; buildings:boolean; water:boolean; land:boolean; poi:boolean };
+type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };
+type LayerState = { roads:boolean; buildings:boolean; water:boolean; land:boolean; poi:boolean };
 const $ = <T extends HTMLElement>(selector: string): T => {
   const el = document.querySelector<T>(selector);
   if (!el) throw new Error(`Required UI element missing: ${selector}`);
@@ -15,8 +18,10 @@ const $ = <T extends HTMLElement>(selector: string): T => {
 const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results'), setStatus = (s: string) => { status.textContent = s; };
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
-let searchIndex: SearchItem[] = [];\nlet allSearchIndex: SearchItem[] = [];
-let localData: LocalCollection | null = null;\nlet layerState:LayerState={roads:true,buildings:true,water:true,land:true,poi:true};
+let searchIndex: SearchItem[] = [];
+let allSearchIndex: SearchItem[] = [];
+let localData: LocalCollection | null = null;
+let layerState:LayerState={roads:true,buildings:true,water:true,land:true,poi:true};
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
 function vectorStyle(): maplibregl.StyleSpecification {
   return { version: 8, sources: { karaj: { type: 'vector', url: 'pmtiles://' + new URL(config.archive, location.href).href } }, layers: [
@@ -91,7 +96,8 @@ async function addGeoJSON(): Promise<void> {
     map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
     geojsonReady = true;
     allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props = f.properties; if (!props || !(props.name || props['name:fa'] || props['name:en'])) return []; return [{ feature: f, label: String(props['name:fa'] || props.name || props['name:en']), props, center: geometryCenter(f.geometry) }]; });
-    searchIndex = allSearchIndex;\n    setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
+    searchIndex = allSearchIndex;
+    setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }
 function renderSearchResults(items: SearchItem[]): void {
@@ -114,11 +120,11 @@ function exportLocalGeoJSON(): void {
 }
 function exportFeatureCSV(): void {
   if (!localData) { setStatus('دادهٔ محلی برای خروجی در دسترس نیست.'); return; }
-  const keys=Array.from(new Set(localData.features.flatMap(f=>Object.keys(f.properties||{})))).sort();
-  const quote=(v:unknown)=>'"'+formatValue(v).replaceAll('"','""')+'"';
-  const lines=[keys.map(quote).join(','),...localData.features.map(f=>keys.map(k=>quote(f.properties?.[k])).join(','))];
-  downloadBlob('karaj-attributes.csv',new Blob(['\\uFEFF'+lines.join('\\r\
-')],{type:'text/csv;charset=utf-8'}));
+  const keys = Array.from(new Set(localData.features.flatMap(f => Object.keys(f.properties || {})))).sort();
+  const quote = (value: unknown) => '"' + formatValue(value).replaceAll('"','""') + '"';
+  const rows = [keys.map(quote).join(','), ...localData.features.map(f => keys.map(k => quote(f.properties?.[k])).join(','))];
+  const csv = '\uFEFF' + rows.join('\r\n');
+  downloadBlob('karaj-attributes.csv', new Blob([csv], {type:'text/csv;charset=utf-8'}));
   setStatus('CSV ویژگی‌های محلی صادر شد.');
 }
 function setSearchMode(mode:'name'|'address'|'all'):void {
@@ -150,7 +156,8 @@ function setAllLayers(visible:boolean):void {
 }
 function toggleLayer(name: string, visible: boolean): void {
   const ids: Record<string, string[]> = { roads: ['roads', 'osm-roads-line'], buildings: ['buildings', 'osm-buildings-2d', 'osm-buildings-3d'], water: ['water'], land: ['land'], poi: ['osm-poi-circle'] };
-  ids[name]?.forEach(id => { if (map?.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); });\n  if(name in layerState)layerState[name as keyof LayerState]=visible;
+  ids[name]?.forEach(id => { if (map?.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); });
+  if(name in layerState)layerState[name as keyof LayerState]=visible;
 }
 async function initMap(): Promise<void> {
   const style = await chooseStyle();

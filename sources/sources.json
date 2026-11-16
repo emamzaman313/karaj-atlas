@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "project": "Karaj Atlas",
+  "updated_at": "2026-11-16",
+  "sources": [
+    {
+      "id": "osm",
+      "name": "OpenStreetMap contributors",
+      "url": "https://www.openstreetmap.org/",
+      "license": "ODbL 1.0",
+      "attribution": "© OpenStreetMap contributors",
+      "usage": ["roads", "building-footprints", "poi", "names"],
+      "limitations": "Coverage and tags vary; not every building has a known height or every boundary is official."
+    },
+    {
+      "id": "geofabrik-iran",
+      "name": "Geofabrik Iran extract",
+      "url": "https://download.geofabrik.de/asia/iran.html",
+      "license": "OSM data terms (ODbL)",
+      "usage": ["base-data-download"],
+      "limitations": "Regional extract; clip to project boundary and record download date."
+    },
+    {
+      "id": "maplibre",
+      "name": "MapLibre GL JS",
+      "url": "https://github.com/maplibre/maplibre-gl-js",
+      "license": "BSD-3-Clause",
+      "usage": ["map-renderer"]
+    },
+    {
+      "id": "pmtiles",
+      "name": "PMTiles",
+      "url": "https://github.com/protomaps/PMTiles",
+      "license": "BSD-3-Clause",
+      "usage": ["offline-tile-archive"]
+    }
+  ]
+}

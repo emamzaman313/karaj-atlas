@@ -131,10 +131,8 @@ function addSelectionLayer(): void {
 function selectSearchItem(item:SearchItem):void {
   if(item.center)map?.flyTo({center:item.center,zoom:16,duration:750});
   showFeature(item.props,item.label);
-  if(map&&item.center){
-    const src=map.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
-    src?.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:item.center},properties:{}}]});
-  }
+  const src=map?.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
+  if(src&&item.center)src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:item.center},properties:{}}]});
 }
 function toggle3D(on: boolean): void {
   if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); ($('#mode-3d') as HTMLInputElement).checked = false; return; }
@@ -283,7 +281,7 @@ function renderSearchResults(items: SearchItem[]): void {
   resultsEl.replaceChildren();
   items.forEach((item) => {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result'; button.textContent = item.label; button.title = item.label; button.setAttribute('aria-label', 'نمایش ' + item.label);
-    button.addEventListener('click', () => { if (item.center) map?.flyTo({ center: item.center, zoom: 16, duration: 900 }); showFeature(item.props, item.label); });
+    button.addEventListener('click', () => selectSearchItem(item));
     resultsEl.append(button);
   });
   resultsEl.hidden = items.length === 0;
@@ -323,7 +321,7 @@ async function initMap(): Promise<void> {
   map = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: {}, style });
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
   map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
-  map.on('load', async () => { $('#loading').hidden = true; await addGeoJSON(); });
+  map.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); await addGeoJSON(); });
   map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
   map.on('click', (event: MapLayerMouseEvent) => { const features = map!.queryRenderedFeatures(event.point); const feature = features.find(f => f.source === 'karaj-osm-local') || features[0]; if (feature) showFeature((feature.properties || {}) as Props); });
 }

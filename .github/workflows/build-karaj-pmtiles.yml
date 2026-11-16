@@ -39,6 +39,8 @@ jobs:
           tippecanoe --version
       - name: Generate and verify multi-layer PMTiles archive
         run: bash scripts/build_pmtiles.sh public/data/karaj.pmtiles public/data/vector
+      - name: Verify PMTiles header and generate checksum report
+        run: python scripts/verify_pmtiles.py public/data/karaj.pmtiles --report public/data/karaj-pmtiles-verify.json
       - name: Upload complete dataset bundle
         uses: actions/upload-artifact@v4
         with:
@@ -48,6 +50,7 @@ jobs:
             public/data/karaj-osm.geojson
             public/data/karaj-3d.geojson
             public/data/karaj-data-report.json
+            public/data/karaj-pmtiles-verify.json
             public/data/vector/*.geojson
             public/data/vector/layers-report.json
           retention-days: 30

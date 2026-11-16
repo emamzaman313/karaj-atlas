@@ -1,6 +1,8 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
-import { normalizeFa } from './search/normalize';\nimport { AtlasSearchIndex } from './search';
-import { geometryCenter } from './map/geometry';\nimport { LAYERS, DEFAULT_VISIBILITY, type LayerId } from './map/layers';
+import { normalizeFa } from './search/normalize';
+import { AtlasSearchIndex } from './search';
+import { geometryCenter } from './map/geometry';
+import { LAYERS, DEFAULT_VISIBILITY, type LayerId } from './map/layers';
 import { inspectGeoJSON } from './data/inspect';
 import { ThreeBuildingPreview } from './three/building-preview';
 import { watchNetwork } from './core/network';
@@ -22,7 +24,8 @@ const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results')
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];
-let allSearchIndex: SearchItem[] = [];\nconst rankedSearch=new AtlasSearchIndex();
+let allSearchIndex: SearchItem[] = [];
+const rankedSearch=new AtlasSearchIndex();
 let localData: LocalCollection | null = null;
 const threePreview=new ThreeBuildingPreview();
 let threePreviewMounted=false;
@@ -102,7 +105,8 @@ async function addGeoJSON(): Promise<void> {
     map!.addLayer({ id: 'osm-poi-circle', type: 'circle', source: 'karaj-osm-local', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } });
     geojsonReady = true;
     allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props=f.properties; if(!props || !Object.keys(props).length)return []; const label=String(props['name:fa'] || props.name || props['name:en'] || props.amenity || props.shop || props.highway || props.building || props['addr:street'] || 'عارضهٔ بدون نام'); return [{feature:f,label,props,center:geometryCenter(f.geometry)}]; });
-    searchIndex = allSearchIndex;\n    rankedSearch.build(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
+    searchIndex = allSearchIndex;
+    rankedSearch.build(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
     setStatus(`دادهٔ محلی: ${report.total.toLocaleString('fa-IR')} عارضه · ساختمان ${report.buildings.toLocaleString('fa-IR')} · نام‌دار ${report.named.toLocaleString('fa-IR')} · مختصات نامعتبر ${report.invalidCoordinates.toLocaleString('fa-IR')}`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }
@@ -129,7 +133,8 @@ function exportFeatureCSV(): void {
   const keys = Array.from(new Set(localData.features.flatMap(f => Object.keys(f.properties || {})))).sort();
   const quote = (value: unknown) => '"' + formatValue(value).replaceAll('"','""') + '"';
   const rows = [keys.map(quote).join(','), ...localData.features.map(f => keys.map(k => quote(f.properties?.[k])).join(','))];
-  const csv = '\uFEFF' + rows.join('\\r\\n');
+  const csv = '\uFEFF' + rows.join('\\r\
+');
   downloadBlob('karaj-attributes.csv', new Blob([csv], {type:'text/csv;charset=utf-8'}));
   setStatus('CSV ویژگی‌های محلی صادر شد.');
 }

@@ -23,6 +23,8 @@ jobs:
         run: python scripts/karaj_data_pipeline.py --bbox "${{ inputs.bbox }}"
       - name: Validate GeoJSON and report
         run: python scripts/validate_geojson.py public/data/karaj-osm.geojson
+      - name: Prepare 3D building heights
+        run: python scripts/build_3d_buildings.py public/data/karaj-osm.geojson public/data/karaj-3d.geojson
       - name: Split semantic vector layers
         run: python scripts/split_osm_layers.py public/data/karaj-osm.geojson --out-dir public/data/vector
       - uses: actions/upload-artifact@v4
@@ -30,6 +32,7 @@ jobs:
           name: karaj-osm-dataset-${{ github.run_number }}
           path: |
             public/data/karaj-osm.geojson
+            public/data/karaj-3d.geojson
             public/data/karaj-data-report.json
             public/data/vector/*.geojson
             public/data/vector/layers-report.json

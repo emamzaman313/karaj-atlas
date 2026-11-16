@@ -265,3 +265,8 @@ function wireUI(): void {
 wireUI();
 watchNetwork(state=>{const badge=$('#network-state');badge.textContent=state==='online'?'آنلاین':'آفلاین';badge.dataset.state=state;});
 void initMap();
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js')
+    .then(() => console.info('[KarajAtlas] app shell caching enabled'))
+    .catch(error => console.warn('[KarajAtlas] service worker registration failed', error)));
+}

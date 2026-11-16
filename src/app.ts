@@ -1,4 +1,4 @@
-import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type GeoJSONSource, type MapLibreEvent } from 'maplibre-gl';
+import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -34,9 +34,9 @@ async function chooseStyle(): Promise<maplibregl.StyleSpecification> {
 }
 function featureCenter(geometry: import('geojson').Geometry | null): [number, number] | null {
   if (!geometry) return null;
-  const points: number[][] = [];
+  const points: [number, number][] = [];
   const walk = (value: unknown): void => {
-    if (Array.isArray(value) && typeof value[0] === 'number' && typeof value[1] === 'number') points.push(value as number[]);
+    if (Array.isArray(value) && typeof value[0] === 'number' && typeof value[1] === 'number') points.push([value[0], value[1]]);
     else if (Array.isArray(value)) value.forEach(walk);
   };
   if ('coordinates' in geometry) walk(geometry.coordinates);
@@ -68,8 +68,8 @@ async function addGeoJSON(): Promise<void> {
 }
 function renderSearchResults(items: SearchItem[]): void {
   resultsEl.replaceChildren();
-  items.forEach((item, index) => {
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result'; button.textContent = item.label; button.title = item.label;
+  items.forEach((item) => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result'; button.textContent = item.label; button.title = item.label; button.setAttribute('aria-label', 'نمایش ' + item.label);
     button.addEventListener('click', () => { if (item.center) map?.flyTo({ center: item.center, zoom: 16, duration: 900 }); showFeature(item.props, item.label); });
     resultsEl.append(button);
   });
@@ -91,7 +91,7 @@ async function initMap(): Promise<void> {
   map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
   map.on('load', async () => { $('#loading').hidden = true; await addGeoJSON(); });
   map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
-  map.on('click', (event: MapLayerMouseEvent) => { const feature = map!.queryRenderedFeatures(event.point)[0]; if (feature) showFeature((feature.properties || {}) as Props); });
+  map.on('click', (event: MapLayerMouseEvent) => { const features = map!.queryRenderedFeatures(event.point); const feature = features.find(f => f.source === 'karaj-osm-local') || features[0]; if (feature) showFeature((feature.properties || {}) as Props); });
 }
 function wireUI(): void {
   document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input => input.addEventListener('change', () => toggleLayer(input.dataset.layer || '', input.checked)));

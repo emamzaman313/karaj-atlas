@@ -196,8 +196,9 @@ async function initMap(): Promise<void> {
   map.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } });
   map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
   map.on('click', (event: MapLayerMouseEvent) => {
-    const feature=map!.queryRenderedFeatures(event.point).find(f=>f.source==='karaj-osm-local')||map!.queryRenderedFeatures(event.point)[0];
-    if(!feature)return;
+    const rendered=map!.queryRenderedFeatures(event.point);
+    const feature=rendered.find(f=>f.source==='karaj-osm-local')||rendered[0];
+    if(!feature){$('#feature-panel').hidden=true;return;}
     showFeature((feature.properties||{}) as Props);
     if(feature.geometry.type==='Point'){
       const source=map!.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;

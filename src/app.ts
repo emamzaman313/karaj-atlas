@@ -160,10 +160,11 @@ function setAllLayers(visible:boolean):void {
   document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input=>input.checked=visible);
   applyLayerState();
 }
-function toggleLayer(name: string, visible: boolean): void {
-  const ids: Record<string, string[]> = { roads: ['roads', 'osm-roads-line'], buildings: ['buildings', 'osm-buildings-2d', 'osm-buildings-3d'], water: ['water'], land: ['land'], poi: ['osm-poi-circle'] };
-  ids[name]?.forEach(id => { if (map?.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none'); });
-  if(name in layerState)layerState[name as keyof LayerState]=visible;
+function toggleLayer(name:string,visible:boolean):void {
+  const layer=LAYERS.find(item=>item.id===name);
+  if(!layer)return;
+  layer.layerIds.forEach(id=>{if(map?.getLayer(id))map.setLayoutProperty(id,'visibility',visible?'visible':'none');});
+  layerState[layer.id]=visible;
 }
 async function initMap(): Promise<void> {
   const style = await chooseStyle();

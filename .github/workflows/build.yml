@@ -12,7 +12,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.12'\n      - run: python -m py_compile scripts/*.py\n      - run: python -m unittest discover -s tests -v\n      - run: npm install
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python pipeline
+        run: python -m py_compile scripts/*.py
+      - name: Run offline data pipeline tests
+        run: python -m unittest discover -s tests -v
+      - run: npm install
       - run: npm run build
       - name: Verify static output
         run: test -f dist/index.html

@@ -65,7 +65,16 @@ async function addGeoJSON(): Promise<void> {
     setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }
-function renderSearchResults(items: SearchItem[]): void {\n  resultsEl.replaceChildren();\n  items.forEach((item, index) => {\n    const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result'; button.textContent = item.label; button.title = item.label;\n    button.addEventListener('click', () => { if (item.center) map?.flyTo({ center: item.center, zoom: 16, duration: 900 }); showFeature(item.props, item.label); });\n    resultsEl.append(button);\n  });\n  resultsEl.hidden = items.length === 0;\n}\nfunction toggle3D(on: boolean): void {
+function renderSearchResults(items: SearchItem[]): void {
+  resultsEl.replaceChildren();
+  items.forEach((item, index) => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result'; button.textContent = item.label; button.title = item.label;
+    button.addEventListener('click', () => { if (item.center) map?.flyTo({ center: item.center, zoom: 16, duration: 900 }); showFeature(item.props, item.label); });
+    resultsEl.append(button);
+  });
+  resultsEl.hidden = items.length === 0;
+}
+function toggle3D(on: boolean): void {
   if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); $('#mode-3d').checked = false; return; }
   threeD = on; map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible'); map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
   map.easeTo({ pitch: on ? 58 : 0, bearing: on ? -18 : 0, duration: 850 }); setStatus(on ? 'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع‌ها با برچسب منبع' : 'نمای دوبعدی فعال');

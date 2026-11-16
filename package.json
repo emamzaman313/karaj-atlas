@@ -1,11 +1,11 @@
 {
   "name": "karaj-atlas",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -13,6 +13,7 @@
     "pmtiles": "^4.3.0"
   },
   "devDependencies": {
+    "typescript": "^5.8.3",
     "vite": "^6.4.1"
   }
 }

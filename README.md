@@ -67,3 +67,21 @@ npm run dev
 npm run build  # type-check + production bundle
 npm run preview
 ```
+
+
+## نسخهٔ نزدیک انتشار — چک نهایی
+- [x] ساخت frontend با TypeScript/Vite در CI
+- [x] تست‌های offline pipeline و GeoJSON QA
+- [x] نقشهٔ پایه با fallback و attribution
+- [x] PMTiles vector source و لایه‌های راه/ساختمان/آب/زمین/POI
+- [x] ساختمان 3D در GeoJSON و vector tiles
+- [x] جست‌وجوی فارسی و کنترل لایه‌ها
+- [x] import/export GeoJSON و CSV، ذخیره IndexedDB
+- [x] PWA shell و manifest نصب
+- [x] محافظت import در برابر فایل‌های خیلی بزرگ و fallback وقتی دادهٔ محلی نیست
+- [ ] اجرای استخراج واقعی OSM و بازبینی کیفیت داده
+- [ ] تأیید مرز اداری کرج از منبع رسمی (bbox فعلی مرز رسمی نیست)
+- [ ] آزمون واقعی PMTiles ساخته‌شده در مرورگر و سنجش عملکرد
+- [ ] تست دستی موبایل/دسکتاپ و انتشار GitHub Pages/Release
+
+**تعریف انتشار:** این مخزن buildable است، اما «نقشهٔ نهایی و بدون باگ» تا انجام موارد باز بالا قابل تضمین نیست. CI موفق نیز جای آزمون واقعی داده و مرورگر را نمی‌گیرد.

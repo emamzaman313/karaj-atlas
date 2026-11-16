@@ -1,6 +1,6 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
-import { geometryCenter } from './map/geometry';
+import { geometryCenter } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -97,7 +97,7 @@ async function addGeoJSON(): Promise<void> {
     geojsonReady = true;
     allSearchIndex = data.features.flatMap((f): SearchItem[] => { const props = f.properties; if (!props || !(props.name || props['name:fa'] || props['name:en'])) return []; return [{ feature: f, label: String(props['name:fa'] || props.name || props['name:en']), props, center: geometryCenter(f.geometry) }]; });
     searchIndex = allSearchIndex;
-    setStatus(`OSM محلی: ${data.features.length.toLocaleString('fa-IR')} عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی`);
+    setStatus(`دادهٔ محلی: ${report.total.toLocaleString('fa-IR')} عارضه · ساختمان ${report.buildings.toLocaleString('fa-IR')} · نام‌دار ${report.named.toLocaleString('fa-IR')} · مختصات نامعتبر ${report.invalidCoordinates.toLocaleString('fa-IR')}`);
   } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
 }
 function renderSearchResults(items: SearchItem[]): void {

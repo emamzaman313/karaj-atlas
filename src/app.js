@@ -3,10 +3,9 @@ import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
 
-const $=s=>document.querySelector(s), status=$('#status'), mapEl=$('#map');
-const setStatus=s=>status.textContent=s;
-let map,protocol,archive,usingLocal=false,geojsonReady=false;
-const config={archive:'./data/karaj.pmtiles',geojson:'./data/karaj-osm.geojson',center:[50.98,35.84],zoom:11.3};
+const $=s=>document.querySelector(s),status=$('#status'),mapEl=$('#map'),setStatus=s=>status.textContent=s;
+let map,protocol,archive,usingLocal=false,geojsonReady=false,threeD=false;
+const config={archive:'./data/karaj.pmtiles',geojson:'./data/karaj-3d.geojson',center:[50.98,35.84],zoom:11.3};
 const onlineStyle={version:8,sources:{osmPreview:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm-preview',type:'raster',source:'osmPreview'}]};
 function vectorStyle(){return {version:8,sources:{karaj:{type:'vector',url:'pmtiles://'+new URL(config.archive,location.href).href}},layers:[
 {id:'background',type:'background',paint:{'background-color':'#101a29'}},
@@ -15,38 +14,41 @@ function vectorStyle(){return {version:8,sources:{karaj:{type:'vector',url:'pmti
 {id:'roads',type:'line',source:'karaj','source-layer':'transportation',paint:{'line-color':['match',['get','class'],'motorway','#d9ad60','primary','#b9a06c','#52647b'],'line-width':['interpolate',['linear'],['zoom'],9,.35,15,2.4,18,7]}},
 {id:'buildings',type:'fill',source:'karaj','source-layer':'building',paint:{'fill-color':'#61738a','fill-opacity':.72}}
 ]};}
-async function chooseStyle(){
- try{protocol=new Protocol();maplibregl.addProtocol('pmtiles',protocol.tile);archive=new PMTiles(new URL(config.archive,location.href).href);await archive.getHeader();protocol.add(archive);usingLocal=true;return vectorStyle();}
- catch(e){console.info('No local PMTiles archive; use OSM raster preview.',e);return onlineStyle;}
-}
+async function chooseStyle(){try{protocol=new Protocol();maplibregl.addProtocol('pmtiles',protocol.tile);archive=new PMTiles(new URL(config.archive,location.href).href);await archive.getHeader();protocol.add(archive);usingLocal=true;return vectorStyle();}catch(e){console.info('No local PMTiles archive; online raster preview selected.',e);return onlineStyle;}}
 async function addGeoJSON(){
  try{
-  const response=await fetch(config.geojson,{cache:'no-store'});
-  if(!response.ok)throw new Error('GeoJSON file not found');
-  const data=await response.json();
-  if(data.type!=='FeatureCollection'||!Array.isArray(data.features))throw new Error('Invalid GeoJSON FeatureCollection');
-  map.addSource('karaj-osm-local',{type:'geojson',data, promoteId:'id'});
-  map.addLayer({id:'osm-buildings-fill',type:'fill',source:'karaj-osm-local',filter:['has','building'],paint:{'fill-color':'#d8b36a','fill-opacity':.34,'fill-outline-color':'#e4c987'}});
+  const response=await fetch(config.geojson,{cache:'no-store'});if(!response.ok)throw new Error('3D GeoJSON unavailable');
+  const data=await response.json();if(data.type!=='FeatureCollection'||!Array.isArray(data.features))throw new Error('Invalid GeoJSON');
+  map.addSource('karaj-osm-local',{type:'geojson',data});
+  map.addLayer({id:'osm-buildings-2d',type:'fill',source:'karaj-osm-local',filter:['has','building'],paint:{'fill-color':'#d8b36a','fill-opacity':.35,'fill-outline-color':'#e4c987'}});
+  map.addLayer({id:'osm-buildings-3d',type:'fill-extrusion',source:'karaj-osm-local',filter:['has','building'],layout:{visibility:'none'},paint:{
+   'fill-extrusion-color':['match',['get','height_source'],'osm_height','#c4a16a','estimated_from_levels_3m','#8c9db3','#65758a'],
+   'fill-extrusion-height':['to-number',['get','render_height_m'],9],
+   'fill-extrusion-base':['to-number',['get','render_base_m'],0],
+   'fill-extrusion-opacity':.88
+  }});
   map.addLayer({id:'osm-roads-line',type:'line',source:'karaj-osm-local',filter:['has','highway'],paint:{'line-color':'#65b7d8','line-width':['interpolate',['linear'],['zoom'],11,.5,16,2.5]}});
   map.addLayer({id:'osm-poi-circle',type:'circle',source:'karaj-osm-local',filter:['any',['has','amenity'],['has','shop'],['has','tourism'],['has','historic'],['has','healthcare']],paint:{'circle-radius':['interpolate',['linear'],['zoom'],10,2,16,5],'circle-color':'#e5bf70','circle-stroke-color':'#101827','circle-stroke-width':1}});
-  geojsonReady=true;setStatus('دادهٔ OSM محلی فعال · '+data.features.length.toLocaleString('fa-IR')+' عارضه · انتساب © OpenStreetMap');
- }catch(e){console.info('Local GeoJSON not found; overlays skipped.',e);setStatus(usingLocal?'PMTiles محلی فعال؛ GeoJSON جداگانه موجود نیست.':'نقشهٔ پایهٔ آنلاین فعال · برای overlay واقعی، اسکریپت دریافت داده اجرا شود.');}
+  geojsonReady=true;setStatus('OSM محلی: '+data.features.length.toLocaleString('fa-IR')+' عارضه؛ ساختمان 3D آمادهٔ فعال‌سازی');
+ }catch(e){console.info('Local data absent:',e);setStatus(usingLocal?'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.':'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.');}
 }
+function toggle3D(on){
+ if(!geojsonReady){setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.');$('#mode-3d').checked=false;return;}
+ threeD=on;map.setLayoutProperty('osm-buildings-2d','visibility',on?'none':'visible');map.setLayoutProperty('osm-buildings-3d','visibility',on?'visible':'none');
+ map.easeTo({pitch:on?58:0,bearing:on?-18:0,duration:850});
+ setStatus(on?'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع‌ها با برچسب منبع':'نمای دوبعدی فعال');
+}
+function toggleLayer(name,visible){const ids={roads:['roads','osm-roads-line'],buildings:['buildings','osm-buildings-2d','osm-buildings-3d'],water:['water'],land:['land'],poi:['osm-poi-circle']};ids[name]?.forEach(id=>{if(map?.getLayer(id))map.setLayoutProperty(id,'visibility',visible?'visible':'none');});}
 async function initMap(){
- const style=await chooseStyle();
- map=new maplibregl.Map({container:mapEl,center:config.center,zoom:config.zoom,minZoom:8,maxZoom:19,pitch:0,bearing:0,attributionControl:true,style});
- map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-left');
- map.addControl(new maplibregl.ScaleControl({maxWidth:120,unit:'metric'}),'bottom-left');
- map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccuracy:false},trackUserLocation:false}),'top-left');
- map.on('load',async()=>{$('#loading').hidden=true;setStatus('نقشه آماده است؛ بررسی دادهٔ محلی…');await addGeoJSON();});
- map.on('error',e=>{console.error('[KarajAtlas]',e.error||e);setStatus('خطای نقشه/شبکه؛ فایل داده یا اتصال بررسی شود.');});
- map.on('click',e=>{const f=map.queryRenderedFeatures(e.point)[0];if(!f)return;const p=f.properties||{};$('#feature-title').textContent=p.name||p['name:fa']||p.class||p.amenity||'عارضه';$('#feature-info').textContent=Object.entries(p).slice(0,14).map(([k,v])=>k+': '+v).join(' · ')||'اطلاعات اضافی موجود نیست';$('#feature-panel').hidden=false;});
+ const style=await chooseStyle();map=new maplibregl.Map({container:mapEl,center:config.center,zoom:config.zoom,minZoom:8,maxZoom:19,pitch:0,bearing:0,attributionControl:true,style});
+ map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-left');map.addControl(new maplibregl.ScaleControl({maxWidth:120,unit:'metric'}),'bottom-left');map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccuracy:false},trackUserLocation:false}),'top-left');
+ map.on('load',async()=>{$('#loading').hidden=true;await addGeoJSON();});
+ map.on('error',e=>{console.error('[KarajAtlas]',e.error||e);setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.');});
+ map.on('click',e=>{const f=map.queryRenderedFeatures(e.point)[0];if(!f)return;const p=f.properties||{};$('#feature-title').textContent=p.name||p['name:fa']||p.class||p.amenity||p.building||'عارضه';$('#feature-info').textContent=Object.entries(p).slice(0,16).map(([k,v])=>k+': '+v).join(' · ')||'ویژگی موجود نیست';$('#feature-panel').hidden=false;});
 }
-function toggleLayer(name,visible){const ids={roads:['roads','osm-roads-line'],buildings:['buildings','osm-buildings-fill'],water:['water'],land:['land'],poi:['osm-poi-circle']};ids[name]?.forEach(id=>{if(map?.getLayer(id))map.setLayoutProperty(id,'visibility',visible?'visible':'none');});}
-function wireUI(){
- document.querySelectorAll('[data-layer]').forEach(i=>i.addEventListener('change',()=>toggleLayer(i.dataset.layer,i.checked)));
- $('#close-feature').addEventListener('click',()=>$('#feature-panel').hidden=true);
- $('#reset-view').addEventListener('click',()=>map?.flyTo({center:config.center,zoom:config.zoom,pitch:0,bearing:0,duration:900}));
- $('#search').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim())setStatus('جست‌وجوی «'+e.target.value.trim()+'» پس از ساخت نمایهٔ نام‌ها فعال می‌شود.');});
+function wireUI(){document.querySelectorAll('[data-layer]').forEach(i=>i.addEventListener('change',()=>toggleLayer(i.dataset.layer,i.checked)));
+ $('#mode-3d').addEventListener('change',e=>toggle3D(e.target.checked));$('#close-feature').addEventListener('click',()=>$('#feature-panel').hidden=true);
+ $('#reset-view').addEventListener('click',()=>map?.flyTo({center:config.center,zoom:config.zoom,pitch:threeD?58:0,bearing:threeD?-18:0,duration:900}));
+ $('#search').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim())setStatus('جست‌وجوی «'+e.target.value.trim()+'» در مرحلهٔ نمایه‌سازی نام‌هاست.');});
 }
 wireUI();initMap();

@@ -40,6 +40,7 @@ function vectorStyle(): maplibregl.StyleSpecification {
     { id: 'water', type: 'fill', source: 'karaj', 'source-layer': 'water', paint: { 'fill-color': '#163b55' } },
     { id: 'roads', type: 'line', source: 'karaj', 'source-layer': 'transportation', paint: { 'line-color': ['match', ['get', 'class'], 'motorway', '#d9ad60', 'primary', '#b9a06c', '#52647b'], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, .35, 15, 2.4, 18, 7] } },
     { id: 'poi-vector', type: 'circle', source: 'karaj', 'source-layer': 'poi', filter: ['any', ['has', 'amenity'], ['has', 'shop'], ['has', 'tourism'], ['has', 'historic'], ['has', 'healthcare'], ['has', 'public_transport']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 5], 'circle-color': '#e5bf70', 'circle-stroke-color': '#101827', 'circle-stroke-width': 1 } },
+    { id: 'buildings-3d-vector', type: 'fill-extrusion', source: 'karaj', 'source-layer': 'building', layout: { visibility: 'none' }, paint: { 'fill-extrusion-color': '#8c9db3', 'fill-extrusion-height': ['case', ['has', 'height'], ['to-number', ['get', 'height'], 9], ['has', 'building:levels'], ['*', ['to-number', ['get', 'building:levels'], 3], 3], 9], 'fill-extrusion-base': ['to-number', ['get', 'min_height'], 0], 'fill-extrusion-opacity': .88 } },
     { id: 'buildings', type: 'fill', source: 'karaj', 'source-layer': 'building', paint: { 'fill-color': '#61738a', 'fill-opacity': .72 } }
   ] };
 }
@@ -159,9 +160,18 @@ function selectSearchItem(item:SearchItem):void {
   if(src&&item.center)src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:item.center},properties:{}}]});
 }
 function toggle3D(on: boolean): void {
-  if (!geojsonReady || !map) { setStatus('برای 3D ابتدا GeoJSON محلی را دریافت و آماده کنید.'); ($('#mode-3d') as HTMLInputElement).checked = false; return; }
-  threeD = on; map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible'); map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
-  map.easeTo({ pitch: on ? 58 : 0, bearing: on ? -18 : 0, duration: 850 }); setStatus(on ? 'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع‌ها با برچسب منبع' : 'نمای دوبعدی فعال');
+  if ((!geojsonReady && !usingLocal) || !map) { setStatus('برای نمای سه‌بعدی، PMTiles یا GeoJSON محلی لازم است.'); ($('#mode-3d') as HTMLInputElement).checked = false; return; }
+  threeD = on;
+  if (geojsonReady) {
+    map.setLayoutProperty('osm-buildings-2d', 'visibility', on ? 'none' : 'visible');
+    map.setLayoutProperty('osm-buildings-3d', 'visibility', on ? 'visible' : 'none');
+  }
+  if (usingLocal && map.getLayer('buildings-3d-vector')) {
+    map.setLayoutProperty('buildings', 'visibility', on ? 'none' : 'visible');
+    map.setLayoutProperty('buildings-3d-vector', 'visibility', on ? 'visible' : 'none');
+  }
+  map.easeTo({ pitch: on ? 58 : 0, bearing: on ? -18 : 0, duration: 850 });
+  setStatus(on ? 'نمای سه‌بعدی ساختمان‌ها فعال · ارتفاع OSM/تخمین طبقات' : 'نمای دوبعدی فعال');
 }
 function applyLayerState():void {
   (Object.keys(layerState) as (keyof LayerState)[]).forEach(name=>toggleLayer(name,layerState[name]));

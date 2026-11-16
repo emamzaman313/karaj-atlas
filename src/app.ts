@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
 
 type Props = Record<string, unknown> & { name?: string; 'name:fa'?: string; 'name:en'?: string; building?: string; highway?: string; amenity?: string; height_source?: string; render_height_m?: number; render_base_m?: number };
-type LocalFeature = GeoJSON.Feature<GeoJSON.Geometry, Props>;
+type LocalFeature = import('geojson').Feature<import('geojson').Geometry, Props>;
 type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };
 const $ = <T extends HTMLElement>(selector: string): T => {
   const el = document.querySelector<T>(selector);
@@ -31,7 +31,7 @@ async function chooseStyle(): Promise<maplibregl.StyleSpecification> {
     archive = new PMTiles(new URL(config.archive, location.href).href); await archive.getHeader(); protocol.add(archive); usingLocal = true; return vectorStyle();
   } catch (error) { console.info('Local PMTiles unavailable; raster fallback.', error); return onlineStyle; }
 }
-function featureCenter(geometry: GeoJSON.Geometry | null): [number, number] | null {
+function featureCenter(geometry: import('geojson').Geometry | null): [number, number] | null {
   if (!geometry) return null;
   const points: number[][] = [];
   const walk = (value: unknown): void => {
@@ -50,7 +50,7 @@ function showFeature(properties: Props, fallback = 'عارضه'): void {
 async function addGeoJSON(): Promise<void> {
   try {
     const response = await fetch(config.geojson, { cache: 'no-store' }); if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`);
-    const data = await response.json() as GeoJSON.FeatureCollection<GeoJSON.Geometry, Props>;
+    const data = await response.json() as import('geojson').FeatureCollection<import('geojson').Geometry, Props>;
     if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('Invalid GeoJSON FeatureCollection');
     map!.addSource('karaj-osm-local', { type: 'geojson', data });
     map!.addLayer({ id: 'osm-buildings-2d', type: 'fill', source: 'karaj-osm-local', filter: ['has', 'building'], paint: { 'fill-color': '#d8b36a', 'fill-opacity': .35, 'fill-outline-color': '#e4c987' } });

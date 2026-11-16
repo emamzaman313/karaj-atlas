@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vite/
+.DS_Store
+*.log
+# Large derived/raw geodata is stored outside Git unless deliberately released.
+data/raw/
+data/processed/
+public/data/*.pmtiles
+public/data/*.pbf

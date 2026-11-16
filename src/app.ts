@@ -58,7 +58,7 @@ function showFeature(properties: Props, fallback = 'عارضه'): void {
     ['highway','نوع راه'],['building','نوع ساختمان'],['addr:street','خیابان'],['addr:housenumber','شماره'],['addr:city','شهر'],
     ['height','ارتفاع ثبت‌شده'],['building:levels','تعداد طبقات'],['height_source','منبع ارتفاع'],['operator','متولی'],['phone','تلفن'],['website','وب‌سایت']
   ];
-  const entries: [string,string][] = [...preferred.filter(([key]) => properties[key] !== undefined), ...Object.entries(properties).filter(([key]) => !preferred.some(([p]) => p === key)).slice(0, 12).map(([key]) => [key,key])];
+  const entries: [string,string][] = [...preferred.filter(([key]) => properties[key] !== undefined), ...Object.entries(properties).filter(([key]) => !preferred.some(([p]) => p === key)).slice(0, 12).map(([key]) => [key,key] as [string,string])];
   for (const [key,label] of entries) {
     const row=document.createElement('div'); row.className='feature-row';
     const name=document.createElement('span'); name.className='feature-key'; name.textContent=label;

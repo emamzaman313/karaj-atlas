@@ -1,6 +1,6 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
-import { geometryCenter } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';
+import { geometryCenter, geometryBounds } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -170,8 +170,10 @@ async function initMap(): Promise<void> {
     const feature=map!.queryRenderedFeatures(event.point).find(f=>f.source==='karaj-osm-local')||map!.queryRenderedFeatures(event.point)[0];
     if(!feature)return;
     showFeature((feature.properties||{}) as Props);
-    const source=map!.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
-    if(source && feature.geometry.type==='Point')source.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:feature.geometry,properties:{}}]});
+    if(feature.geometry.type==='Point'){
+      const source=map!.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
+      source?.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:feature.geometry,properties:{}}]});
+    }
   });
 }
 function wireUI(): void {

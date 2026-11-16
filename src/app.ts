@@ -100,8 +100,8 @@ function wireUI(): void {
   $('#search').addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key !== 'Enter') return; const query = (event.target as HTMLInputElement).value.trim().toLocaleLowerCase('fa'); if (!query) return;
     const hits = searchIndex.filter(item => item.label.toLocaleLowerCase('fa').includes(query) || Object.entries(item.props).some(([key, value]) => key.startsWith('name:') && String(value).toLocaleLowerCase('fa').includes(query))).slice(0, 8);
-    if (!hits.length) { setStatus('نتیجه‌ای در دادهٔ محلی پیدا نشد؛ داده ممکن است ناقص باشد.'); return; }
-    const first = hits[0]; if (first.center) map?.flyTo({ center: first.center, zoom: 16, duration: 900 }); setStatus('نتایج جست‌وجو: ' + hits.map(item => item.label).join('، ')); showFeature(first.props, first.label);
+    if (!hits.length) { renderSearchResults([]); setStatus('نتیجه‌ای در دادهٔ محلی پیدا نشد؛ داده ممکن است ناقص باشد.'); return; }
+    renderSearchResults(hits); setStatus('یافتن ' + hits.length + ' نتیجه؛ روی مورد دلخواه کلیک کنید.');
   });
 }
 wireUI(); void initMap();

@@ -6,7 +6,7 @@ For large/production extracts prefer Geofabrik PBF + osmium clipping.
 Usage: python scripts/fetch_osm_karaj.py [output.geojson]
 """
 from __future__ import annotations
-import json, sys, time, urllib.parse, urllib.request
+import argparse, json, sys, time, urllib.parse, urllib.request
 from pathlib import Path
 
 # Approximate bbox covering the Karaj urban study area; not an administrative polygon.
@@ -16,8 +16,9 @@ ENDPOINTS = [
     "https://overpass.kumi.systems/api/interpreter",
 ]
 
-def query_text():
-    bbox=f"{SOUTH},{WEST},{NORTH},{EAST}"
+def query_text(bbox=(SOUTH,WEST,NORTH,EAST)):
+    south,west,north,east=bbox
+    bbox=f"{south},{west},{north},{east}"
     return f"""[out:json][timeout:180];
 (
   way[building]({bbox});
@@ -37,8 +38,8 @@ def query_text():
 );
 out body geom;"""
 
-def request_overpass():
-    body=query_text().encode()
+def request_overpass(bbox=(SOUTH,WEST,NORTH,EAST)):
+    body=query_text(bbox).encode()
     for endpoint in ENDPOINTS:
         try:
             req=urllib.request.Request(endpoint,data=body,headers={
@@ -67,9 +68,18 @@ def feature(el):
     return {"type":"Feature","id":f"way/{el['id']}","properties":props,"geometry":{"type":"LineString","coordinates":points}}
 
 def main():
-    output=Path(sys.argv[1] if len(sys.argv)>1 else "data/karaj-osm.geojson")
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('output',nargs='?',default='public/data/karaj-osm.geojson')
+    parser.add_argument('--bbox',help='SOUTH,WEST,NORTH,EAST')
+    args=parser.parse_args()
+    bbox=(SOUTH,WEST,NORTH,EAST)
+    if args.bbox:
+        bbox=tuple(float(v) for v in args.bbox.split(','))
+        if len(bbox)!=4 or not (-90<=bbox[0]<bbox[2]<=90 and -180<=bbox[1]<bbox[3]<=180): raise SystemExit('Invalid bbox')
+    south,west,north,east=bbox
+    output=Path(args.output)
     output.parent.mkdir(parents=True,exist_ok=True)
-    payload=request_overpass()
+    payload=request_overpass(bbox)
     feats=[]
     for el in payload.get("elements",[]):
         f=feature(el)
@@ -77,7 +87,7 @@ def main():
     result={"type":"FeatureCollection","name":"Karaj approximate OSM study bbox","metadata":{
       "source":"OpenStreetMap contributors","license":"ODbL 1.0",
       "retrieved_at":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
-      "bbox":[WEST,SOUTH,EAST,NORTH],
+      "bbox":[west,south,east,north],
       "boundary_note":"Approximate rectangular study area only; NOT official city boundary.",
       "query":"scripts/fetch_osm_karaj.py"
     },"features":feats}

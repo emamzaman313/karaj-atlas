@@ -27,4 +27,5 @@ tippecanoe -o "$OUT" -zg --drop-densest-as-needed --extend-zooms-if-still-droppi
   --description "OpenStreetMap-derived vector layers for Karaj study extent" \
   --attribution "© OpenStreetMap contributors"
 [[ -s "$OUT" ]] || { echo "PMTiles output missing or empty: $OUT" >&2; exit 3; }
+python scripts/verify_pmtiles.py "$OUT" --report "${OUT%.pmtiles}.verify.json"
 printf 'PMTiles ready: %s (%s bytes)\n' "$OUT" "$(stat -c%s "$OUT")"

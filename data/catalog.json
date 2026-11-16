@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "project": "Karaj Atlas",
+  "datasets": [
+    {
+      "id": "osm-urban-study",
+      "title_fa": "دادهٔ پایهٔ محدودهٔ مطالعاتی کرج",
+      "source": "OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "source_url": "https://www.openstreetmap.org/",
+      "pipeline": "scripts/karaj_data_pipeline.py",
+      "default_bbox_south_west_north_east": [35.70, 50.88, 35.98, 51.12],
+      "boundary_status": "approximate_bbox_not_official_boundary",
+      "categories": ["buildings", "roads", "amenity", "shop", "tourism", "landuse", "natural", "waterway", "leisure", "healthcare", "public_transport", "place", "boundary"],
+      "refresh": "manual workflow dispatch",
+      "quality_notes": [
+        "OSM coverage is community maintained and may be incomplete",
+        "Overpass ways are represented as lines or simple polygons; relation multipolygons are not assembled",
+        "No claim of survey-grade positional accuracy",
+        "Height is explicit only when source tag exists; derived values must be marked"
+      ],
+      "attribution": "© OpenStreetMap contributors"
+    }
+  ]
+}

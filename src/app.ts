@@ -1,6 +1,6 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';\nimport { AtlasSearchIndex } from './search';
-import { geometryCenter } from './map/geometry';
+import { geometryCenter } from './map/geometry';\nimport { LAYERS, DEFAULT_VISIBILITY, type LayerId } from './map/layers';
 import { inspectGeoJSON } from './data/inspect';
 import { ThreeBuildingPreview } from './three/building-preview';
 import { watchNetwork } from './core/network';
@@ -12,7 +12,7 @@ type Props = Record<string, unknown> & { name?: string; 'name:fa'?: string; 'nam
 type LocalFeature = import('geojson').Feature<import('geojson').Geometry, Props>;
 type LocalCollection = import('geojson').FeatureCollection<import('geojson').Geometry, Props>;
 type SearchItem = { feature: LocalFeature; label: string; props: Props; center: [number, number] | null };
-type LayerState = { roads:boolean; buildings:boolean; water:boolean; land:boolean; poi:boolean };
+type LayerState = typeof DEFAULT_VISIBILITY;
 const $ = <T extends HTMLElement>(selector: string): T => {
   const el = document.querySelector<T>(selector);
   if (!el) throw new Error(`Required UI element missing: ${selector}`);
@@ -26,7 +26,7 @@ let allSearchIndex: SearchItem[] = [];\nconst rankedSearch=new AtlasSearchIndex(
 let localData: LocalCollection | null = null;
 const threePreview=new ThreeBuildingPreview();
 let threePreviewMounted=false;
-let layerState:LayerState={roads:true,buildings:true,water:true,land:true,poi:true};
+let layerState:LayerState={...DEFAULT_VISIBILITY};
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
 function vectorStyle(): maplibregl.StyleSpecification {
   return { version: 8, sources: { karaj: { type: 'vector', url: 'pmtiles://' + new URL(config.archive, location.href).href } }, layers: [

@@ -99,6 +99,9 @@ async function addGeoJSON(): Promise<void> {
     localData = data;
     const report=inspectGeoJSON(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
     map!.addSource('karaj-osm-local', { type: 'geojson', data });
+    map!.addLayer({ id: 'osm-landuse-fill', type: 'fill', source: 'karaj-osm-local', filter: ['any', ['has', 'landuse'], ['has', 'natural'], ['has', 'leisure']], paint: { 'fill-color': ['match', ['get', 'natural'], 'wood', '#244735', 'grassland', '#294b3c', 'water', '#17415c', '#263c35'], 'fill-opacity': .48, 'fill-outline-color': '#526c59' } });
+    map!.addLayer({ id: 'osm-water-fill', type: 'fill', source: 'karaj-osm-local', filter: ['any', ['has', 'water'], ['all', ['has', 'natural'], ['==', ['get', 'natural'], 'water']]], paint: { 'fill-color': '#1b5278', 'fill-opacity': .78 } });
+    map!.addLayer({ id: 'osm-water-line', type: 'line', source: 'karaj-osm-local', filter: ['has', 'waterway'], paint: { 'line-color': '#4b9ac7', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, .7, 16, 3] } });
     map!.addLayer({ id: 'osm-buildings-2d', type: 'fill', source: 'karaj-osm-local', filter: ['has', 'building'], paint: { 'fill-color': '#d8b36a', 'fill-opacity': .35, 'fill-outline-color': '#e4c987' } });
     map!.addLayer({ id: 'osm-buildings-3d', type: 'fill-extrusion', source: 'karaj-osm-local', filter: ['has', 'building'], layout: { visibility: 'none' }, paint: {
       'fill-extrusion-color': ['match', ['get', 'height_source'], 'osm_height', '#c4a16a', 'estimated_from_levels_3m', '#8c9db3', '#65758a'],

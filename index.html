@@ -3,7 +3,7 @@
 <body>
 <header><div class="brand"><div class="logo">ک</div><div><h1>اطلس کرج</h1><div class="subtitle">Karaj Atlas · داده‌محور، 2D/3D، آفلاین‌محور</div></div></div><button id="reset-view">بازنشانی دید</button></header>
 <div class="workspace"><aside>
-<div class="panel"><h2>جست‌وجوی شهری</h2><input id="search" type="search" placeholder="نام محله، خیابان یا مکان…"><p class="muted">نمایهٔ جست‌وجو در مرحلهٔ بعد ساخته می‌شود.</p></div>
+<div class="panel"><h2>جست‌وجوی شهری</h2><input id="search" type="search" placeholder="نام محله، خیابان یا مکان…"><p class="muted">Enter را بزنید تا در دادهٔ محلی جست‌وجو شود.</p></div>
 <div class="panel"><h2>لایه‌ها</h2><label><input type="checkbox" data-layer="roads" checked> راه‌ها</label><label><input type="checkbox" data-layer="buildings" checked> ساختمان‌ها</label><label><input type="checkbox" data-layer="poi" checked> مکان‌های مهم</label><label><input type="checkbox" data-layer="water" checked> آب (PMTiles)</label><label><input type="checkbox" data-layer="land" checked> کاربری زمین (PMTiles)</label><label class="mode"><input id="mode-3d" type="checkbox"> نمای سه‌بعدی ساختمان‌ها</label></div>
 <div class="panel"><h2>راهنمای ارتفاع</h2><p><span class="dot verified"></span> ارتفاع ثبت‌شده در OSM</p><p><span class="dot estimate"></span> تخمین از تعداد طبقات</p><p><span class="dot unknown"></span> ارتفاع بصری جایگزین (نامعلوم)</p><small class="muted">ارتفاع‌های تخمینی یا جایگزین، واقعیت اندازه‌گیری‌شده نیستند.</small></div>
 <div class="panel"><h2>دریافت داده</h2><code dir="ltr">python scripts/fetch_osm_karaj.py public/data/karaj-osm.geojson</code><br><code dir="ltr">python scripts/build_3d_buildings.py public/data/karaj-osm.geojson public/data/karaj-3d.geojson</code><p class="muted">bbox تقریبی است؛ مرز رسمی نیست.</p></div>
@@ -13,4 +13,4 @@
 </aside>
 <div id="map" tabindex="0" aria-label="نقشهٔ تعاملی کرج"><div id="loading"><div class="load-card"><strong>اطلس کرج</strong><p>در حال آماده‌سازی نقشه…</p><small>اتصال اینترنت برای نقشهٔ پایه لازم است.</small></div></div></div></div>
 <footer>پیش‌نمایش آنلاین + لایه‌های محلی · 3D با دادهٔ ارتفاع‌دار OSM</footer>
-<script type="module" src="/src/app.js"></script></body></html>
+<script type="module" src="./src/app.js"></script></body></html>

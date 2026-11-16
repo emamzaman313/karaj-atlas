@@ -1,4 +1,4 @@
-import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
+import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';\nimport { normalizeFa } from './search/normalize';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -43,13 +43,6 @@ function featureCenter(geometry: import('geojson').Geometry | null): [number, nu
   if ('coordinates' in geometry) walk(geometry.coordinates);
   if (!points.length) return null;
   return [points.reduce((sum, p) => sum + p[0], 0) / points.length, points.reduce((sum, p) => sum + p[1], 0) / points.length];
-}
-function normalizeFa(input: string): string {
-  return input.normalize('NFKC').replace(/[يى]/g,'ی').replace(/ك/g,'ک')
-    .replace(/[ـًٌٍَُِّْ]/g,'')
-    .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632))
-    .replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-1776))
-    .toLocaleLowerCase('fa').trim();
 }
 function safeText(value:unknown):string {
   if(value===null||value===undefined)return '';

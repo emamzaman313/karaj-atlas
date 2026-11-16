@@ -1,6 +1,6 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
-import { geometryCenter, geometryBounds } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';
+import { geometryCenter, geometryBounds } from './map/geometry';\nimport { inspectGeoJSON } from './data/inspect';\nimport { watchNetwork } from './core/network';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
@@ -209,4 +209,4 @@ function wireUI(): void {
     if (event.key === 'Enter') resultsEl.querySelector<HTMLButtonElement>('.search-result')?.click();
   });
 }
-wireUI(); void initMap();
+wireUI();\nwatchNetwork(state=>{const badge=$('#network-state');badge.textContent=state==='online'?'آنلاین':'آفلاین';badge.dataset.state=state;});\nvoid initMap();

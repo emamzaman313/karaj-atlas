@@ -1,6 +1,6 @@
 import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
-import { geometryCenter, geometryBounds } from './map/geometry';
+import { geometryCenter } from './map/geometry';
 import { inspectGeoJSON } from './data/inspect';
 import { ThreeBuildingPreview } from './three/building-preview';
 import { watchNetwork } from './core/network';
@@ -89,8 +89,9 @@ async function addGeoJSON(): Promise<void> {
   try {
     const response = await fetch(config.geojson, { cache: 'no-store' }); if (!response.ok) throw new Error(`GeoJSON HTTP ${response.status}`);
     const data = await response.json() as LocalCollection;
-    localData = data;
     if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('Invalid GeoJSON FeatureCollection');
+    localData = data;
+    const report=inspectGeoJSON(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
     map!.addSource('karaj-osm-local', { type: 'geojson', data });
     map!.addLayer({ id: 'osm-buildings-2d', type: 'fill', source: 'karaj-osm-local', filter: ['has', 'building'], paint: { 'fill-color': '#d8b36a', 'fill-opacity': .35, 'fill-outline-color': '#e4c987' } });
     map!.addLayer({ id: 'osm-buildings-3d', type: 'fill-extrusion', source: 'karaj-osm-local', filter: ['has', 'building'], layout: { visibility: 'none' }, paint: {

@@ -152,7 +152,13 @@ async function initMap(): Promise<void> {
   map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
   map.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); await addGeoJSON(); });
   map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
-  map.on('click', (event: MapLayerMouseEvent) => { const features = map!.queryRenderedFeatures(event.point); const feature = features.find(f => f.source === 'karaj-osm-local') || features[0]; if (feature) { showFeature((feature.properties || {}) as Props); if(feature.geometry.type==='Point'){const src=map!.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;src?.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:feature.geometry,properties:{}}]});} } });
+  map.on('click', (event: MapLayerMouseEvent) => {
+    const feature=map!.queryRenderedFeatures(event.point).find(f=>f.source==='karaj-osm-local')||map!.queryRenderedFeatures(event.point)[0];
+    if(!feature)return;
+    showFeature((feature.properties||{}) as Props);
+    const source=map!.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
+    if(source && feature.geometry.type==='Point')source.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:feature.geometry,properties:{}}]});
+  });
 }
 function wireUI(): void {
   document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input => input.addEventListener('change', () => toggleLayer(input.dataset.layer || '', input.checked)));

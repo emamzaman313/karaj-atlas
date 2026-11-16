@@ -44,3 +44,24 @@ npm run preview
 - [نقشهٔ راه](docs/ROADMAP.fa.md)
 - [چک‌لیست کیفیت](docs/QUALITY_CHECKLIST.fa.md)
 - [ثبت منابع](sources/sources.json)
+
+
+## توسعهٔ نرم‌افزار (TypeScript-first)
+
+هستهٔ رابط و نقشه با **TypeScript strict** توسعه می‌یابد؛ فایل‌های جدید UI و منطق برنامه باید `.ts` باشند و افزودن JavaScript جدید به هسته مجاز نیست.
+
+- **TypeScript**: رابط نقشه، کنترل لایه‌ها، جست‌وجو، تعاملات، state و مدل‌های داده.
+- **MapLibre GL JS + PMTiles**: نمایش نقشهٔ برداری و بسته‌های آفلاین.
+- **Three.js (مرحلهٔ بعد)**: صحنه‌ها و جلوه‌های سه‌بعدی فراتر از extrusion نقشه.
+- **Python**: استخراج/تبدیل/اعتبارسنجی داده‌های OSM و pipeline داده.
+- **C++/Rust**: فقط برای اجزای native یا پردازش واقعاً سنگین؛ با benchmark و اتصال مشخص (مثلاً WASM/native)، نه افزودن صوری زبان.
+- **Tauri 2**: بسته‌بندی دسکتاپ آفلاین پس از تثبیت داده و نقشه.
+
+### فرمان‌های توسعه
+
+```bash
+npm install
+npm run dev
+npm run build  # type-check + production bundle
+npm run preview
+```

@@ -59,7 +59,7 @@ def fetch(bbox):
    except Exception as exc:
     errors.append(f"{endpoint} try {attempt+1}: {exc}")
     time.sleep(2*(attempt+1))
- raise RuntimeError("\\n".join(errors))
+ raise RuntimeError("\n".join(errors))
 
 def to_feature(el):
  tags=el.get("tags",{}); p={**tags,"osm_type":el["type"],"osm_id":el["id"],"source":"OpenStreetMap","source_method":"Overpass API"}

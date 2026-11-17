@@ -34,7 +34,9 @@ let localData: LocalCollection | null = null;
 let threePreview:ThreeBuildingPreview|undefined;
 let threePreviewMounted=false;
 let layerState:LayerState={...DEFAULT_VISIBILITY};
-const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
+// The atlas renders its own map from the locally hosted Karaj dataset. Never
+// fall back to a third-party tile service when a dataset file is missing.
+const emptyLocalStyle: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: 'atlas-background', type: 'background', paint: { 'background-color': '#101a29' } }] };
 function vectorStyle(): maplibregl.StyleSpecification {
   return { version: 8, sources: { karaj: { type: 'vector', url: 'pmtiles://' + new URL(config.archive, location.href).href } }, layers: [
     { id: 'background', type: 'background', paint: { 'background-color': '#101a29' } },
@@ -50,7 +52,7 @@ async function chooseStyle(): Promise<maplibregl.StyleSpecification> {
   try {
     const protocol = new Protocol(); maplibregl.addProtocol('pmtiles', protocol.tile);
     archive = new PMTiles(new URL(config.archive, location.href).href); await archive.getHeader(); protocol.add(archive); usingLocal = true; return vectorStyle();
-  } catch (error) { console.info('Local PMTiles unavailable; raster fallback.', error); return onlineStyle; }
+  } catch (error) { console.info('Local PMTiles unavailable; keeping the atlas-owned canvas ready for local GeoJSON.', error); return emptyLocalStyle; }
 }
 function safeText(value:unknown):string {
   if(value===null||value===undefined)return '';
@@ -118,7 +120,7 @@ async function addGeoJSON(override?: LocalCollection): Promise<void> {
     searchIndex = allSearchIndex;
     rankedSearch.build(data as import('geojson').FeatureCollection<import('geojson').Geometry,Record<string,unknown>>);
     setStatus(`دادهٔ محلی: ${report.total.toLocaleString('fa-IR')} عارضه · ساختمان ${report.buildings.toLocaleString('fa-IR')} · نام‌دار ${report.named.toLocaleString('fa-IR')} · مختصات نامعتبر ${report.invalidCoordinates.toLocaleString('fa-IR')}`);
-  } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'PMTiles محلی فعال؛ GeoJSON ساختمان‌ها هنوز قرار نگرفته.' : 'پیش‌نمایش آنلاین؛ فایل GeoJSON محلی برای ساختمان‌ها لازم است.'); }
+  } catch (error) { console.info('Local GeoJSON absent:', error); setStatus(usingLocal ? 'نقشهٔ برداری محلی فعال است؛ GeoJSON ساختمان‌ها هنوز در بسته نیست.' : 'صفحهٔ نقشه و ابزارها آماده‌اند؛ برای نمایش شهر، بستهٔ دادهٔ محلی اطلس باید دریافت شود.'); }
 }
 function renderSearchResults(items: SearchItem[]): void {
   resultsEl.replaceChildren();
@@ -192,11 +194,11 @@ function toggleLayer(name:string,visible:boolean):void {
 }
 async function initMap(): Promise<void> {
   const style = await chooseStyle();
-  const mapInstance = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: {}, style });
+  const mapInstance = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: { customAttribution: '© OpenStreetMap contributors · دادهٔ محلی اطلس کرج' }, style });
   map = mapInstance;
   mapInstance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); mapInstance.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
   mapInstance.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
-  mapInstance.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } void refreshOfflineMapStatus(); });
+  mapInstance.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نمای اختصاصی اطلس آماده است؛ بستهٔ دادهٔ شهر هنوز در دسترس نیست.'); } void refreshOfflineMapStatus(); });
   mapInstance.on('error', event => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
   mapInstance.on('mousemove', (event: MapLayerMouseEvent) => { mapInstance.getCanvas().style.cursor = mapInstance.queryRenderedFeatures(event.point).length ? 'pointer' : ''; });
   mapInstance.on('click', (event: MapLayerMouseEvent) => {

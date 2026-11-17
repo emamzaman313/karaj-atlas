@@ -3,8 +3,11 @@ dist/
 .vite/
 .DS_Store
 *.log
+__pycache__/
+*.py[cod]
 # Large derived/raw geodata is stored outside Git unless deliberately released.
 data/raw/
 data/processed/
 public/data/*.pmtiles
 public/data/*.pbf
+

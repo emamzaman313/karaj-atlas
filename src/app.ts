@@ -1,4 +1,5 @@
-import maplibregl, { type Map as MLMap, type MapLayerMouseEvent, type MapLibreEvent } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import type { Map as MLMap, MapLayerMouseEvent } from 'maplibre-gl';
 import { normalizeFa } from './search/normalize';
 import { AtlasSearchIndex } from './search';
 import { geometryCenter } from './map/geometry';
@@ -6,7 +7,7 @@ import { LAYERS, DEFAULT_VISIBILITY, type LayerId } from './map/layers';
 import { inspectGeoJSON } from './data/inspect';
 import { sanitizeGeoJSON } from './data/sanitize';
 import { saveDataset, loadDataset, listDatasets } from './data/local-store';
-import { ThreeBuildingPreview } from './three/building-preview';
+import type { BuildingFeature, ThreeBuildingPreview } from './three/building-preview';
 import { watchNetwork } from './core/network';
 import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -29,7 +30,7 @@ let searchIndex: SearchItem[] = [];
 let allSearchIndex: SearchItem[] = [];
 const rankedSearch=new AtlasSearchIndex();
 let localData: LocalCollection | null = null;
-const threePreview=new ThreeBuildingPreview();
+let threePreview:ThreeBuildingPreview|undefined;
 let threePreviewMounted=false;
 let layerState:LayerState={...DEFAULT_VISIBILITY};
 const onlineStyle: maplibregl.StyleSpecification = { version: 8, sources: { osmPreview: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap contributors' } }, layers: [{ id: 'osm-preview', type: 'raster', source: 'osmPreview' }] };
@@ -190,19 +191,20 @@ function toggleLayer(name:string,visible:boolean):void {
 }
 async function initMap(): Promise<void> {
   const style = await chooseStyle();
-  map = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: {}, style });
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
-  map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
-  map.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } });
-  map.on('error', (event: MapLibreEvent & { error?: Error }) => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
-  map.on('mousemove', (event: MapLayerMouseEvent) => { map!.getCanvas().style.cursor = map!.queryRenderedFeatures(event.point).length ? 'pointer' : ''; });
-  map.on('click', (event: MapLayerMouseEvent) => {
-    const rendered=map!.queryRenderedFeatures(event.point);
+  const mapInstance = new maplibregl.Map({ container: mapEl, center: config.center, zoom: config.zoom, minZoom: 8, maxZoom: 19, pitch: 0, bearing: 0, attributionControl: {}, style });
+  map = mapInstance;
+  mapInstance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); mapInstance.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
+  mapInstance.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
+  mapInstance.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } });
+  mapInstance.on('error', event => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
+  mapInstance.on('mousemove', (event: MapLayerMouseEvent) => { mapInstance.getCanvas().style.cursor = mapInstance.queryRenderedFeatures(event.point).length ? 'pointer' : ''; });
+  mapInstance.on('click', (event: MapLayerMouseEvent) => {
+    const rendered=mapInstance.queryRenderedFeatures(event.point);
     const feature=rendered.find(f=>f.source==='karaj-osm-local')||rendered[0];
     if(!feature){$('#feature-panel').hidden=true;return;}
     showFeature((feature.properties||{}) as Props);
     if(feature.geometry.type==='Point'){
-      const source=map!.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
+      const source=mapInstance.getSource('karaj-selection') as import('maplibre-gl').GeoJSONSource|undefined;
       source?.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:feature.geometry,properties:{}}]});
     }
   });
@@ -253,12 +255,25 @@ function wireUI(): void {
   }));
   $('#show-all-layers')?.addEventListener('click', () => setAllLayers(true));
   $('#hide-all-layers')?.addEventListener('click', () => setAllLayers(false));
-  $('#toggle-three-preview')?.addEventListener('click',()=>{
+  $('#toggle-three-preview')?.addEventListener('click',async()=>{
     const panel=$('#three-panel');panel.hidden=!panel.hidden;
     if(panel.hidden)return;
     if(!localData){setStatus('برای نمای Three.js ابتدا GeoJSON محلی را دریافت کنید.');panel.hidden=true;return;}
-    if(!threePreviewMounted){threePreview.mount($('#three-canvas') as HTMLCanvasElement);threePreviewMounted=true;}
-    const buildings=localData.features.filter(f=>Boolean(f.properties?.building)) as import('./three/building-preview').BuildingFeature[];
+    try {
+      if(!threePreview){
+        setStatus('در حال آماده‌سازی نمای سه‌بعدی…');
+        const module=await import('./three/building-preview');
+        if(panel.hidden)return;
+        threePreview=new module.ThreeBuildingPreview();
+      }
+      if(!threePreviewMounted){threePreview.mount($('#three-canvas') as HTMLCanvasElement);threePreviewMounted=true;}
+    } catch(error) {
+      console.error('[KarajAtlas] Three.js preview failed to load',error);
+      panel.hidden=true;
+      setStatus('نمای سه‌بعدی در این دستگاه بارگذاری نشد.');
+      return;
+    }
+    const buildings=localData.features.filter(f=>Boolean(f.properties?.building)) as BuildingFeature[];
     const count=threePreview.setBuildings(buildings,{lng:config.center[0],lat:config.center[1]});
     setStatus(`Three.js: ${count.toLocaleString('fa-IR')} footprint در محدودهٔ مدل`);
   });
@@ -284,3 +299,4 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     .then(() => console.info('[KarajAtlas] app shell caching enabled'))
     .catch(error => console.warn('[KarajAtlas] service worker registration failed', error)));
 }
+

@@ -7,6 +7,9 @@ export type SearchDocument = {
   feature: AtlasFeature;
   label: string;
   normalized: string;
+  name: string;
+  address: string;
+  kinds: string;
   properties: Record<string, unknown>;
   tokens: string[];
 };
@@ -31,8 +34,11 @@ export class AtlasSearchIndex {
         properties.amenity || properties.shop || properties.highway || properties.building ||
         properties['addr:street'] || 'عارضهٔ بدون نام');
       const normalized = normalize(Object.entries(properties).map(([key, value]) => key + ' ' + valueText(value)).join(' '));
+      const name = normalize(nameFields.map(key => properties[key]).filter(Boolean).join(' '));
+      const address = normalize(addressFields.map(key => properties[key]).filter(Boolean).join(' '));
+      const kinds = normalize(kindFields.map(key => properties[key]).filter(Boolean).join(' '));
       const tokens = Array.from(new Set(normalized.split(' ').filter(token => token.length > 1)));
-      return [{ feature, label, normalized, properties, tokens }];
+      return [{ feature, label, normalized, name, address, kinds, properties, tokens }];
     });
   }
 
@@ -41,18 +47,15 @@ export class AtlasSearchIndex {
     if (q.length < 2) return [];
     const qTokens = q.split(' ').filter(Boolean);
     const ranked = this.documents.map(doc => {
-      const name = normalize(nameFields.map(key => doc.properties[key]).filter(Boolean).join(' '));
-      const address = normalize(addressFields.map(key => doc.properties[key]).filter(Boolean).join(' '));
-      const kinds = normalize(kindFields.map(key => doc.properties[key]).filter(Boolean).join(' '));
-      const target = mode === 'name' ? name : mode === 'address' ? address : doc.normalized;
+      const target = mode === 'name' ? doc.name : mode === 'address' ? doc.address : doc.normalized;
       let score = target === q ? 120 : target.startsWith(q) ? 90 : target.includes(q) ? 65 : 0;
       if (mode === 'all' && score === 0) {
         const matched = qTokens.filter(token => doc.tokens.some(item => item.includes(token))).length;
         score = matched === qTokens.length ? 30 + matched * 5 : matched ? matched * 5 : 0;
       }
-      if (mode === 'name' && name.includes(q)) score += 12;
-      if (mode === 'address' && address.includes(q)) score += 12;
-      if (kinds.includes(q)) score += 8;
+      if (mode === 'name' && doc.name.includes(q)) score += 12;
+      if (mode === 'address' && doc.address.includes(q)) score += 12;
+      if (doc.kinds.includes(q)) score += 8;
       return { doc, score };
     }).filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score || a.doc.label.localeCompare(b.doc.label, 'fa'));

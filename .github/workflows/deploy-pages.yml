@@ -26,6 +26,28 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Find latest successful dataset for main-site updates
+        id: latest-dataset
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          runs=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/build-karaj-pmtiles.yml/runs?branch=main&status=success&per_page=1")
+          run_id=$(printf '%s' "$runs" | python -c 'import json,sys; r=json.load(sys.stdin).get("workflow_runs", []); print(r[0]["id"] if r else "")')
+          if [ -z "$run_id" ]; then exit 0; fi
+          artifacts=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts")
+          artifact_id=$(printf '%s' "$artifacts" | python -c 'import json,sys; a=json.load(sys.stdin).get("artifacts", []); m=[x for x in a if x["name"].startswith("karaj-pmtiles-") and not x["expired"]]; print(m[0]["id"] if m else "")')
+          echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+      - name: Download latest dataset for main-site updates
+        if: steps.latest-dataset.outputs.artifact_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.latest-dataset.outputs.artifact_id }}
+          path: public/data
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download generated Karaj dataset artifact
         if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
         uses: actions/download-artifact@v4

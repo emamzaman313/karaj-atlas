@@ -89,3 +89,12 @@ npm run preview
 
 ### کنترل کیفیت PMTiles
 در مرحلهٔ ساخت آرشیو، اسکریپت `scripts/verify_pmtiles.py` اکنون magic header، نسخهٔ PMTiles v3، حداقل طول فایل و SHA-256 را بررسی و گزارش checksum تولید می‌کند. این کنترل صحت header/فایل را می‌سنجد، نه decode کامل همهٔ tileها؛ برای آن آزمون نقشه/ابزار PMTiles لازم است.
+
+
+## فعال‌سازی انتشار عمومی (یک‌بار برای مخزن)
+ساخت production در Actions موفق است؛ برای اجازهٔ انتشار، مالک مخزن باید یک‌بار:
+1. وارد **Settings → Pages** همین مخزن شود.
+2. در **Build and deployment → Source** گزینهٔ **GitHub Actions** را انتخاب کند.
+3. ذخیره کند؛ سپس workflow انتشار را از Actions دوباره اجرا کند.
+
+پس از آن، با push به شاخهٔ `main` سایت build و deploy می‌شود. پس از اجرای موفق workflow **Build Karaj PMTiles dataset** نیز workflow انتشار همان artifact داده را دریافت می‌کند و `public/data/karaj.pmtiles` را داخل خروجی سایت قرار می‌دهد. بدون artifact داده، برنامه فقط نقشهٔ پایهٔ آنلاین را نمایش می‌دهد.

@@ -20,5 +20,10 @@ class BuildingHeightTests(unittest.TestCase):
         f = enrich(self.feature({"amenity": "school"}))
         self.assertNotIn("render_height_m", f["properties"])
 
+    def test_building_no_is_not_extruded(self):
+        f = enrich(self.feature({"building": "no", "height": "18 m"}))
+        self.assertNotIn("render_height_m", f["properties"])
+        self.assertNotIn("height_source", f["properties"])
+
 if __name__ == "__main__":
     unittest.main()

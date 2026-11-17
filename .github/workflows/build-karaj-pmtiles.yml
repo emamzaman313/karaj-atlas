@@ -26,7 +26,7 @@ jobs:
       - name: Prepare height-aware 3D buildings GeoJSON
         run: python scripts/build_3d_buildings.py public/data/karaj-osm.geojson public/data/karaj-3d.geojson
       - name: Split semantic layers
-        run: python scripts/split_osm_layers.py public/data/karaj-osm.geojson --out-dir public/data/vector
+        run: python scripts/split_osm_layers.py public/data/karaj-3d.geojson --out-dir public/data/vector
       - name: Install Tippecanoe build dependencies
         run: |
           sudo apt-get update

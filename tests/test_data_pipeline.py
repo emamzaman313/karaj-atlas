@@ -1,7 +1,15 @@
 import unittest
-from scripts.karaj_data_pipeline import query, to_feature, DEFAULT_BBOX
+import urllib.parse
+from scripts.karaj_data_pipeline import query, to_feature, DEFAULT_BBOX, encode_overpass_payload
 
 class OSMPipelineTests(unittest.TestCase):
+    def test_overpass_payload_is_form_encoded(self):
+        payload = encode_overpass_payload(DEFAULT_BBOX)
+        parsed = urllib.parse.parse_qs(payload.decode())
+        self.assertIn('data', parsed)
+        self.assertIn('way[building]', parsed['data'][0])
+        self.assertIn('out body geom', parsed['data'][0])
+
     def test_query_has_core_layers(self):
         q=query(DEFAULT_BBOX)
         for tag in ("building","highway","landuse","amenity","waterway","public_transport"):

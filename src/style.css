@@ -33,3 +33,4 @@ footer{font-size:11px;color:#7185a2;padding:10px 16px;border-top:1px solid #2535
 #three-canvas{display:block;width:100%;height:260px;border:1px solid #2c4057;border-radius:8px;background:#0b1420}#toggle-three-preview{width:100%;padding:8px;font-size:12px}#three-panel{margin-top:8px}
 
 #geojson-import{width:100%;font-size:11px;margin:6px 0}#storage-info{font-size:11px;overflow-wrap:anywhere;margin-top:8px}
+#download-offline-map,#remove-offline-map{width:100%;padding:8px;font-size:12px;margin:4px 0}#offline-map-progress{width:100%;height:8px;accent-color:#d8b36a}#offline-map-status{font-size:11px;line-height:1.7;overflow-wrap:anywhere;margin-top:7px}

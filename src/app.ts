@@ -25,6 +25,7 @@ const $ = <T extends HTMLElement>(selector: string): T => {
 };
 const status = $('#status'), mapEl = $('#map'), resultsEl = $('#search-results'), setStatus = (s: string) => { status.textContent = s; };
 const config = { archive: './data/karaj.pmtiles', geojson: './data/karaj-3d.geojson', center: [50.98, 35.84] as [number, number], zoom: 11.3 };
+const OFFLINE_CACHE = 'karaj-atlas-offline-data-v1';
 let map: MLMap | undefined, archive: PMTiles | undefined, usingLocal = false, geojsonReady = false, threeD = false;
 let searchIndex: SearchItem[] = [];
 let allSearchIndex: SearchItem[] = [];
@@ -195,7 +196,7 @@ async function initMap(): Promise<void> {
   map = mapInstance;
   mapInstance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left'); mapInstance.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
   mapInstance.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, trackUserLocation: false }), 'top-left');
-  mapInstance.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } });
+  mapInstance.on('load', async () => { $('#loading').hidden = true; addSelectionLayer(); try { await addGeoJSON(); } catch(error) { console.warn('[KarajAtlas] local dataset unavailable',error); setStatus('نقشهٔ پایه آماده است؛ دادهٔ ساختمان‌ها/لایه‌های محلی هنوز بارگذاری نشده.'); } void refreshOfflineMapStatus(); });
   mapInstance.on('error', event => { console.error('[KarajAtlas]', event.error || event); setStatus('خطای نقشه/شبکه؛ اتصال یا داده بررسی شود.'); });
   mapInstance.on('mousemove', (event: MapLayerMouseEvent) => { mapInstance.getCanvas().style.cursor = mapInstance.queryRenderedFeatures(event.point).length ? 'pointer' : ''; });
   mapInstance.on('click', (event: MapLayerMouseEvent) => {
@@ -223,6 +224,33 @@ async function loadLocalCollection(data:LocalCollection,sourceLabel:string):Prom
 async function refreshStorageInfo():Promise<void>{
  const items=await listDatasets();$('#storage-info').textContent=items.length?items.map(x=>`${x.name} · ${x.features.toLocaleString('fa-IR')} عارضه · ${(x.bytes/1048576).toFixed(1)} MB`).join(' | '):'هنوز داده‌ای ذخیره نشده است.';
 }
+async function refreshOfflineMapStatus():Promise<void>{
+ const button=$('#download-offline-map') as HTMLButtonElement,remove=$('#remove-offline-map') as HTMLButtonElement,status=$('#offline-map-status');
+ if(!('caches'in window)||!('serviceWorker'in navigator)){status.textContent='ذخیرهٔ آفلاین در این مرورگر پشتیبانی نمی‌شود.';button.disabled=true;return;}
+ try{const cache=await caches.open(OFFLINE_CACHE),saved=await cache.match(new URL(config.archive,location.href).href);
+  if(saved){const bytes=Number(saved.headers.get('Content-Length'))||Number(saved.headers.get('X-Offline-Size'))||0;status.textContent=`نقشه برای استفادهٔ آفلاین ذخیره شده${bytes?` · ${(bytes/1048576).toFixed(1)} مگابایت`:''}.`;remove.hidden=false;button.textContent='به‌روزرسانی نقشهٔ آفلاین';}
+  else{status.textContent='نقشهٔ آفلاین هنوز ذخیره نشده است.';remove.hidden=true;}
+ }catch{status.textContent='وضعیت ذخیرهٔ آفلاین قابل خواندن نیست.';}
+}
+async function saveOfflineMap():Promise<void>{
+ const button=$('#download-offline-map') as HTMLButtonElement,progress=$('#offline-map-progress') as HTMLProgressElement,status=$('#offline-map-status');
+ button.disabled=true;progress.hidden=false;progress.value=0;status.textContent='در حال دریافت بستهٔ نقشه…';
+ try{
+  const url=new URL(config.archive,location.href),response=await fetch(url,{cache:'no-store'});if(!response.ok||!response.body)throw new Error(`PMTiles HTTP ${response.status}`);
+  const total=Number(response.headers.get('Content-Length'))||0,reader=response.body.getReader(),chunks:Uint8Array[]=[];let received=0;
+  while(true){const {done,value}=await reader.read();if(done)break;if(value){chunks.push(value);received+=value.byteLength;progress.value=total?Math.min(99,received/total*100):0;status.textContent=total?`دریافت بستهٔ نقشه · ${(received/1048576).toFixed(1)} از ${(total/1048576).toFixed(1)} مگابایت`:`دریافت بستهٔ نقشه · ${(received/1048576).toFixed(1)} مگابایت`;}}
+  const bytes=new Uint8Array(received);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  const magic=new TextDecoder().decode(bytes.subarray(0,7));if(magic!=='PMTiles')throw new Error('PMTiles header invalid');
+  const headers=new Headers(response.headers);headers.set('Content-Length',String(bytes.byteLength));headers.set('X-Offline-Size',String(bytes.byteLength));
+  const cache=await caches.open(OFFLINE_CACHE);await cache.put(url.href,new Response(bytes,{status:200,headers}));
+  progress.value=100;status.textContent=`نقشه ذخیره شد · ${(bytes.byteLength/1048576).toFixed(1)} مگابایت · لایه‌های محلی در حالت آفلاین در دسترس‌اند.`;
+  ($('#remove-offline-map') as HTMLButtonElement).hidden=false;button.textContent='به‌روزرسانی نقشهٔ آفلاین';
+ }catch(error){console.error('[KarajAtlas] offline map download failed',error);status.textContent='ذخیرهٔ نقشه ناموفق شد؛ اتصال یا فضای خالی دستگاه را بررسی کنید.';}
+ finally{button.disabled=false;setTimeout(()=>{progress.hidden=true;},1200);}
+}
+async function removeOfflineMap():Promise<void>{
+ const url=new URL(config.archive,location.href),cache=await caches.open(OFFLINE_CACHE);await cache.delete(url.href);$('#offline-map-status').textContent='نقشهٔ آفلاین حذف شد.';($('#remove-offline-map') as HTMLButtonElement).hidden=true;($('#download-offline-map') as HTMLButtonElement).textContent='ذخیرهٔ نقشه برای حالت آفلاین';
+}
 function wireUI(): void {
   document.querySelectorAll<HTMLInputElement>('[data-layer]').forEach(input =>
     input.addEventListener('change', () => toggleLayer(input.dataset.layer || '', input.checked)));
@@ -246,6 +274,9 @@ function wireUI(): void {
     catch(error){console.error(error);setStatus('بازیابی IndexedDB ناموفق شد.');}
   });
   void refreshStorageInfo();
+  $('#download-offline-map')?.addEventListener('click',()=>void saveOfflineMap());
+  $('#remove-offline-map')?.addEventListener('click',()=>void removeOfflineMap());
+  void refreshOfflineMapStatus();
   $('#export-csv')?.addEventListener('click', exportFeatureCSV);
   document.querySelectorAll<HTMLButtonElement>('[data-search-mode]').forEach(button =>
     button.addEventListener('click', () => setSearchMode(button.dataset.searchMode as 'name'|'address'|'all')));

@@ -40,8 +40,11 @@ def query(bbox:tuple[float,float,float,float])->str:
 );
 out body geom;"""
 
+def encode_overpass_payload(bbox):
+ return urllib.parse.urlencode({"data":query(bbox)}).encode()
+
 def fetch(bbox):
- payload=urllib.parse.urlencode({"data":query(bbox)}).encode()
+ payload=encode_overpass_payload(bbox)
  errors=[]
  for endpoint in ENDPOINTS:
   for attempt in range(3):

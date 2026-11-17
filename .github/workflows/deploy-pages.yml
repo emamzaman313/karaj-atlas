@@ -30,11 +30,11 @@ jobs:
         if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
         uses: actions/download-artifact@v4
         with:
-          name: karaj-pmtiles-\${{ github.event.workflow_run.run_number }}
+          name: karaj-pmtiles-${{ github.event.workflow_run.run_number }}
           path: public/data
-          repository: \${{ github.repository }}
-          run-id: \${{ github.event.workflow_run.id }}
-          github-token: \${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run Python tests
         run: python -m unittest discover -s tests -v
       - name: Build static app

@@ -19,7 +19,9 @@ def number(v):
 
 def enrich(feature):
     p=feature.setdefault("properties",{})
-    if not p.get("building"):return feature
+    # OSM uses building=no as an explicit negative tag; do not extrude it.
+    building=p.get("building")
+    if not building or str(building).strip().lower()=="no":return feature
     h=number(p.get("height") or p.get("building:height"))
     if h and 1<h<300:
         p["render_height_m"]=h;p["height_source"]="osm_height"

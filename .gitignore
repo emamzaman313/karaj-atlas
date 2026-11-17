@@ -10,4 +10,5 @@ data/raw/
 data/processed/
 public/data/*.pmtiles
 public/data/*.pbf
+public/data/*.geojson
 

@@ -3,8 +3,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: [Build Karaj PMTiles dataset]
+    types: [completed]
+    branches: [main]
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 concurrency:
@@ -21,6 +26,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Download generated Karaj dataset artifact
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: karaj-pmtiles-\${{ github.event.workflow_run.run_number }}
+          path: public/data
+          repository: \${{ github.repository }}
+          run-id: \${{ github.event.workflow_run.id }}
+          github-token: \${{ secrets.GITHUB_TOKEN }}
       - name: Run Python tests
         run: python -m unittest discover -s tests -v
       - name: Build static app

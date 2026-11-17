@@ -94,6 +94,7 @@ def main():
  data={"type":"FeatureCollection","name":"Karaj OSM study extent","metadata":{"source":"OpenStreetMap contributors","license":"ODbL 1.0","retrieved_at":stamp,"bbox":[bbox[1],bbox[0],bbox[3],bbox[2]],"boundary_note":"Approximate rectangular extent, NOT official Karaj boundary","query_version":"karaj-data-pipeline-v1"},"features":features}
  out=Path(args.output);out.parent.mkdir(parents=True,exist_ok=True);serialized=json.dumps(data,ensure_ascii=False,separators=(",",":"));out.write_text(serialized,encoding="utf-8")
  report={"generated_at":stamp,"source":"OpenStreetMap / Overpass","license":"ODbL 1.0","bbox_s_w_n_e":bbox,"feature_count":len(features),"duplicate_ids_removed":duplicates,"raw_element_count":len(raw.get("elements",[])),"counts":dict(counts),"geojson_bytes":len(serialized.encode()),"sha256":hashlib.sha256(serialized.encode()).hexdigest(),"limitations":["Approximate bbox, not official city boundary","OSM completeness varies by feature","way-only geometry; relation multipolygons not assembled","height values may be estimated; verify provenance"]}
- report_path=Path(args.report);report_path.parent.mkdir(parents=True,exist_ok=True)\n report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
+ report_path=Path(args.report);report_path.parent.mkdir(parents=True,exist_ok=True)
+ report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
  print(json.dumps(report,ensure_ascii=False,indent=2))
 if __name__=="__main__":main()

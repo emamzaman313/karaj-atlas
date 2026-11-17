@@ -19,6 +19,8 @@ jobs:
         run: python -m py_compile scripts/*.py
       - name: Run offline data pipeline tests
         run: python -m unittest discover -s tests -v
+      - name: Test offline PMTiles range caching
+        run: node --test tests/offline-range.test.mjs
       - run: npm install
       - run: npm run build
       - name: Verify static output

@@ -5,7 +5,7 @@ The configured rectangle is a study extent, NOT an official administrative bound
 For production boundary clipping, supply a verified polygon and use a GIS clip stage.
 """
 from __future__ import annotations
-import argparse, json, time, urllib.request, urllib.error, hashlib
+import argparse, json, time, urllib.request, urllib.error, urllib.parse, hashlib
 from pathlib import Path
 from collections import Counter
 
@@ -41,13 +41,13 @@ def query(bbox:tuple[float,float,float,float])->str:
 out body geom;"""
 
 def fetch(bbox):
- payload=query(bbox).encode()
+ payload=urllib.parse.urlencode({"data":query(bbox)}).encode()
  errors=[]
  for endpoint in ENDPOINTS:
   for attempt in range(3):
    try:
     req=urllib.request.Request(endpoint,data=payload,headers={"User-Agent":"KarajAtlas/0.3 (OSM open-data pipeline)","Content-Type":"application/x-www-form-urlencoded"})
-    with urllib.request.urlopen(req,timeout=300) as response:return json.loads(response.read())
+    with urllib.request.urlopen(req,timeout=300) as response:\n     body=response.read()\n     parsed=json.loads(body)\n     if not isinstance(parsed,dict) or not isinstance(parsed.get("elements"),list):raise ValueError("Overpass returned an unexpected JSON payload")\n     return parsed
    except Exception as exc:
     errors.append(f"{endpoint} try {attempt+1}: {exc}");time.sleep(2*(attempt+1))
  raise RuntimeError("\n".join(errors))
@@ -85,6 +85,6 @@ def main():
  data={"type":"FeatureCollection","name":"Karaj OSM study extent","metadata":{"source":"OpenStreetMap contributors","license":"ODbL 1.0","retrieved_at":stamp,"bbox":[bbox[1],bbox[0],bbox[3],bbox[2]],"boundary_note":"Approximate rectangular extent, NOT official Karaj boundary","query_version":"karaj-data-pipeline-v1"},"features":features}
  out=Path(args.output);out.parent.mkdir(parents=True,exist_ok=True);serialized=json.dumps(data,ensure_ascii=False,separators=(",",":"));out.write_text(serialized,encoding="utf-8")
  report={"generated_at":stamp,"source":"OpenStreetMap / Overpass","license":"ODbL 1.0","bbox_s_w_n_e":bbox,"feature_count":len(features),"duplicate_ids_removed":duplicates,"raw_element_count":len(raw.get("elements",[])),"counts":dict(counts),"geojson_bytes":len(serialized.encode()),"sha256":hashlib.sha256(serialized.encode()).hexdigest(),"limitations":["Approximate bbox, not official city boundary","OSM completeness varies by feature","way-only geometry; relation multipolygons not assembled","height values may be estimated; verify provenance"]}
- Path(args.report).write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
+ report_path=Path(args.report);report_path.parent.mkdir(parents=True,exist_ok=True)\n report_path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
  print(json.dumps(report,ensure_ascii=False,indent=2))
 if __name__=="__main__":main()

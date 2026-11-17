@@ -40,6 +40,7 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts")
           artifact_id=$(printf '%s' "$artifacts" | python -c 'import json,sys; a=json.load(sys.stdin).get("artifacts", []); m=[x for x in a if x["name"].startswith("karaj-pmtiles-") and not x["expired"]]; print(m[0]["id"] if m else "")')
           echo "artifact_id=$artifact_id" >> "$GITHUB_OUTPUT"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
       - name: Download latest dataset for main-site updates
         if: steps.latest-dataset.outputs.artifact_id != ''
         uses: actions/download-artifact@v4
@@ -48,6 +49,7 @@ jobs:
           path: public/data
           repository: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.latest-dataset.outputs.run_id }}
       - name: Download generated Karaj dataset artifact
         if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
         uses: actions/download-artifact@v4

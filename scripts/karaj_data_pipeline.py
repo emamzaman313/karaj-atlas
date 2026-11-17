@@ -47,10 +47,16 @@ def fetch(bbox):
   for attempt in range(3):
    try:
     req=urllib.request.Request(endpoint,data=payload,headers={"User-Agent":"KarajAtlas/0.3 (OSM open-data pipeline)","Content-Type":"application/x-www-form-urlencoded"})
-    with urllib.request.urlopen(req,timeout=300) as response:\n     body=response.read()\n     parsed=json.loads(body)\n     if not isinstance(parsed,dict) or not isinstance(parsed.get("elements"),list):raise ValueError("Overpass returned an unexpected JSON payload")\n     return parsed
+    with urllib.request.urlopen(req,timeout=300) as response:
+     body=response.read()
+     parsed=json.loads(body)
+     if not isinstance(parsed,dict) or not isinstance(parsed.get("elements"),list):
+      raise ValueError("Overpass returned an unexpected JSON payload")
+     return parsed
    except Exception as exc:
-    errors.append(f"{endpoint} try {attempt+1}: {exc}");time.sleep(2*(attempt+1))
- raise RuntimeError("\n".join(errors))
+    errors.append(f"{endpoint} try {attempt+1}: {exc}")
+    time.sleep(2*(attempt+1))
+ raise RuntimeError("\\n".join(errors))
 
 def to_feature(el):
  tags=el.get("tags",{}); p={**tags,"osm_type":el["type"],"osm_id":el["id"],"source":"OpenStreetMap","source_method":"Overpass API"}
